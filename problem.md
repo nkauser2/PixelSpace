@@ -3,27 +3,27 @@ Students who want to pursue or are interested in digital art may not have as muc
 
 # Initial Requirements: 
 
-# Requirement 1:
+**R1:**
 The program must display an interactive interface/canvas where users can create their digital artwork. 
 
-# Req 2: 
+**R2:**
 The program must provide an original color palette and custom color selecting option. 
 
-# Req 3: 
+**R3**
 The program should provide a brush to draw freely/free-handed strokes on the canvas with the selected color. 
 
-# Req 4: 
+**R4**
 The program should provide an eraser tool to remove strokes or marks that were already drawn.
 
-# Req 5: 
+**R5**
 The program must allow users to undo or redo drawing strokes or actions.  
 
-# Req 6: 
+**R6**
 The program must allow users to save artwork and reopen it with previous work saved. 
 
-# Req 7: 
-The program should allow and provide users with ready-made drawing or coloring templates. 
+**R7**
+The program should allow and provide users with ready-made drawings or coloring templates.
 
-# Req 8: 
-The program must allow users the option to clear the canvas completely if the like. 
+**R8**
+The program must allow users the option to clear the canvas completely if they like. 
 
