@@ -1,4 +1,4 @@
-# Problem: 
+# Problem 
 Students who want to pursue or are interested in digital art may not have as much access to digital art resources or digital/graphic art tools. The tools which are available may be overwhelming (too professional) for beginners to understand while other softwares might be too basic. Beginners might also have limited opportunities to experiment with colors or tools at that entry level. Students need an easily accesible yet modern way to learn and practice creative skills/tools and make digital artwork without having to learn it professionally.
 
 # Initial Requirements: 
@@ -10,10 +10,10 @@ The program must display an interactive interface/canvas where users can create 
 The program must provide an original color palette and custom color selecting option. 
 
 **R3**
-The program should provide a brush to draw freely/free-handed strokes on the canvas with the selected color. 
+The program must provide a brush to draw freely/free-handed strokes on the canvas with the selected color. 
 
 **R4**
-The program should provide an eraser tool to remove strokes or marks that were already drawn.
+The program must provide an eraser tool to remove strokes or marks that were already drawn.
 
 **R5**
 The program must allow users to undo or redo drawing strokes or actions.  
@@ -22,7 +22,7 @@ The program must allow users to undo or redo drawing strokes or actions.
 The program must allow users to save artwork and reopen it with previous work saved. 
 
 **R7**
-The program should allow and provide users with ready-made drawings or coloring templates.
+The program must allow and provide users with ready-made drawings or coloring templates.
 
 **R8**
 The program must allow users the option to clear the canvas completely if they like. 
