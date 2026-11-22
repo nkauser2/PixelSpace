@@ -2,7 +2,7 @@
 
 ## What it does
 
-PixelSpace is a beginner-friendly digital art canvas that runs in your web browser. You can draw freehand with a brush, erase, pick colors from a built-in palette or choose your own, and color in ready-made templates. You can undo, redo, clear the canvas, and save your artwork to reopen later. Everything runs on your own computer, with no accounts, API keys or payments.
+PixelSpace is a beginner-friendly digital art canvas that runs in your web browser. You can draw freehand with a brush, erase, pick colors from a built-in palette or choose your own, and quickly reuse your 5 most recently picked colors. You can color in ready-made templates, undo, redo, clear the canvas, save your artwork to reopen later, and rename saved artwork. Everything runs on your own computer, with no accounts, API keys or payments.
 
 ## How to run it
 
