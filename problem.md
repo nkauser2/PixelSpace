@@ -27,3 +27,11 @@ The program must allow and provide users with ready-made drawings or coloring te
 **R8**
 The program must allow users the option to clear the canvas completely if they like. 
 
+# Round 2 requirements
+
+**R9**
+The program must show the 5 most recently picked colors, with each color shown only once, and clicking on one of them must select it again as the current color. 
+
+**R10**
+The program must allow the user to rename a saved artwork or drawing without losing it. If the new name is already used by another piece of saved artwork, the program must ask the user to confirm it before replacing it. 
+
