@@ -1,9 +1,10 @@
-"""Saving and reopening artwork (R6).
+"""Saving, reopening (R6) and renaming (R10) artwork.
 
 Each artwork is saved as a JSON file inside the saves/ folder.
 Safety rules (from CLAUDE.md):
   * There is NO delete function - saved artwork is never removed.
   * An existing save is only replaced when the user confirms (overwrite=True).
+    This applies to saving AND to renaming onto a name that's already used.
   * Damaged files are reported, never deleted or changed.
 """
 
@@ -65,13 +66,58 @@ def save_artwork(artwork, name, save_dir=SAVE_DIR, overwrite=False):
         "strokes": artwork.get("strokes", []),
     }
 
-    # Write to a temporary file first, then swap it in. If something goes
-    # wrong mid-write, the user's previous save is left untouched.
+    _write_json_safely(path, data)
+    return path.stem
+
+
+def _write_json_safely(path, data):
+    """Write to a temporary file first, then swap it in. If something goes
+    wrong mid-write, the file that was there before is left untouched."""
     temp_path = path.with_suffix(".json.tmp")
     with open(temp_path, "w", encoding="utf-8") as f:
         json.dump(data, f)
     os.replace(temp_path, path)
-    return path.stem
+
+
+def rename_artwork(old_name, new_name, save_dir=SAVE_DIR, overwrite=False):
+    """Give a saved artwork a new name (R10). Returns the cleaned new name.
+
+    The artwork's file is moved, not copied, so its strokes and template are
+    never lost along the way. Raises:
+      * ValueError if the new name has no letters or numbers,
+      * FileNotFoundError if there's no artwork called `old_name`,
+      * ArtworkExistsError if a DIFFERENT artwork already uses the new name
+        and overwrite is False (the user hasn't agreed to replace it).
+    """
+    old_path = _path_for(old_name, save_dir)
+    new_path = _path_for(new_name, save_dir)
+    if not old_path.exists():
+        raise FileNotFoundError(f"No saved artwork called '{old_path.stem}'.")
+    if old_path.name == new_path.name:
+        return new_path.stem  # same name: nothing to do
+
+    # On Windows, "cat.json" and "Cat.json" are the same file, so renaming
+    # "cat" to "Cat" must not count as clashing with another artwork.
+    clashes = new_path.exists() and not os.path.samefile(old_path, new_path)
+    if clashes and not overwrite:
+        raise ArtworkExistsError(f"An artwork called '{new_path.stem}' already exists.")
+
+    os.replace(old_path, new_path)  # move the file to its new name in one step
+    _update_name_inside(new_path)
+    return new_path.stem
+
+
+def _update_name_inside(path):
+    """Store the new name inside the file too. A damaged file is left exactly
+    as it is - its name on disk has changed, which is all that's needed."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return
+    if isinstance(data, dict):
+        data["name"] = path.stem
+        _write_json_safely(path, data)
 
 
 def list_artworks(save_dir=SAVE_DIR):

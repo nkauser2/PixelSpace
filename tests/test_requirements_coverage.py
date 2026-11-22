@@ -7,7 +7,7 @@ import re
 from pathlib import Path
 
 TEST_DIR = Path(__file__).parent
-LAST_REQUIREMENT = 9
+LAST_REQUIREMENT = 10
 REQUIREMENTS = {f"r{n}" for n in range(1, LAST_REQUIREMENT + 1)}
 
 
