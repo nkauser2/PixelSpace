@@ -1,4 +1,4 @@
-# 002: Rename by moving the save file in one step with os.replace
+# 0002: Rename by moving the save file in one step with os.replace
 
 Status: accepted (Round 2, R10)
 

@@ -1,4 +1,4 @@
-# 001: Keep the recent colors list in the Python server's memory
+# 0001: Keep the recent colors list in the Python server's memory
 
 Status: accepted (Round 2, R9)
 

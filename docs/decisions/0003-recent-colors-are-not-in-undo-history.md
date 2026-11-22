@@ -1,4 +1,4 @@
-# 003: Picking a color is not part of undo/redo, clear, or saved artwork
+# 0003: Picking a color is not part of undo/redo, clear, or saved artwork
 
 Status: accepted (Round 2, R9)
 
