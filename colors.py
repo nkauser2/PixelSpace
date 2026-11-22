@@ -52,3 +52,37 @@ def normalize_hex(color):
     if len(color) == 4:  # short form: double each digit
         color = "#" + "".join(ch * 2 for ch in color[1:])
     return color
+
+
+# ---- Recent colors (R9) -------------------------------------------------
+
+MAX_RECENT_COLORS = 5
+
+
+class RecentColors:
+    """Remembers the last few colors the user picked, newest first.
+
+    Each color is kept only once: picking a color that is already in the
+    list moves it to the front instead of adding it a second time.
+    """
+
+    def __init__(self, limit=MAX_RECENT_COLORS):
+        self.limit = limit
+        self._colors = []
+
+    @property
+    def colors(self):
+        """A copy of the list, so nobody can change it by accident."""
+        return list(self._colors)
+
+    def pick(self, color):
+        """Record that `color` was just picked. Returns the clean color.
+
+        Raises ValueError (and changes nothing) if the color isn't valid.
+        """
+        color = normalize_hex(color)  # check it first; "#ABC" -> "#aabbcc"
+        if color in self._colors:
+            self._colors.remove(color)  # it will go back in at the front
+        self._colors.insert(0, color)
+        del self._colors[self.limit:]  # forget anything older than the limit
+        return color
