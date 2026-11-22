@@ -303,3 +303,82 @@ def test_r9_recent_colors_are_not_written_to_disk(client, save_dir):
     """R9: Recent colors live only while the app runs; nothing is saved to disk."""
     client.post("/api/recent-colors", json={"color": "#111111"})
     assert not save_dir.exists()
+
+
+# ---------- R10: rename saved artwork ----------
+
+def test_r10_page_has_rename_controls(client):
+    """R10: The page has a box for the new name and a Rename button."""
+    html = client.get("/").get_data(as_text=True)
+    assert 'id="rename-name"' in html
+    assert 'id="rename-btn"' in html
+
+
+def test_r10_rename_through_the_app_keeps_the_artwork(client):
+    """R10: Rename a saved artwork, then reopen it under the new name."""
+    client.post("/api/stroke", json=brush(color="#2a9d5c"))
+    client.post("/api/template", json={"id": "cat"})
+    client.post("/api/save", json={"name": "draft"})
+
+    res = client.post("/api/rename", json={"old_name": "draft", "new_name": "My Cat"})
+    assert res.status_code == 200
+    assert res.get_json() == {"renamed": "My_Cat"}
+    assert client.get("/api/saves").get_json() == ["My_Cat"]
+
+    client.post("/api/clear")
+    state = client.post("/api/load", json={"name": "My_Cat"}).get_json()
+    assert state["strokes"][0]["color"] == "#2a9d5c"
+    assert state["template"] == "cat"
+
+
+def test_r10_rename_onto_a_used_name_asks_first(client):
+    """R10: Renaming onto another artwork's name returns 409 until the user confirms."""
+    client.post("/api/stroke", json=brush(color="#111111"))
+    client.post("/api/save", json={"name": "mine"})
+    client.post("/api/stroke", json=brush(color="#222222"))
+    client.post("/api/save", json={"name": "taken"})
+
+    res = client.post("/api/rename", json={"old_name": "mine", "new_name": "taken"})
+    assert res.status_code == 409
+    assert res.get_json()["exists"] is True
+    assert client.get("/api/saves").get_json() == ["mine", "taken"]  # nothing changed
+
+    res = client.post("/api/rename", json={"old_name": "mine", "new_name": "taken", "overwrite": True})
+    assert res.status_code == 200
+    assert client.get("/api/saves").get_json() == ["taken"]
+    state = client.post("/api/load", json={"name": "taken"}).get_json()
+    assert len(state["strokes"]) == 1  # it's "mine" (1 stroke), not the old "taken" (2)
+
+
+def test_r10_overwrite_must_be_exactly_true(client):
+    """R10: Only a real yes (overwrite: true) replaces another artwork."""
+    client.post("/api/save", json={"name": "mine"})
+    client.post("/api/save", json={"name": "taken"})
+    res = client.post("/api/rename", json={"old_name": "mine", "new_name": "taken", "overwrite": "yes"})
+    assert res.status_code == 409
+    assert client.get("/api/saves").get_json() == ["mine", "taken"]
+
+
+def test_r10_renaming_a_missing_artwork_gives_404(client):
+    """R10: Renaming a name that isn't saved gives a 404 error."""
+    res = client.post("/api/rename", json={"old_name": "ghost", "new_name": "boo"})
+    assert res.status_code == 404
+    assert "error" in res.get_json()
+
+
+def test_r10_blank_new_name_gives_400_and_keeps_the_artwork(client):
+    """R10: A blank new name gives a helpful 400 error and nothing is renamed."""
+    client.post("/api/save", json={"name": "keep"})
+    res = client.post("/api/rename", json={"old_name": "keep", "new_name": "   "})
+    assert res.status_code == 400
+    assert client.get("/api/saves").get_json() == ["keep"]
+
+
+def test_r10_renaming_does_not_change_the_open_canvas(client):
+    """R10: Renaming a saved file leaves the drawing on screen as it is."""
+    client.post("/api/stroke", json=brush())
+    client.post("/api/save", json={"name": "art"})
+    client.post("/api/rename", json={"old_name": "art", "new_name": "art2"})
+    state = client.get("/api/state").get_json()
+    assert len(state["strokes"]) == 1
+    assert state["can_undo"] is True

@@ -27,6 +27,8 @@ const saveName = document.getElementById("save-name");
 const saveBtn = document.getElementById("save-btn");
 const openSelect = document.getElementById("open-select");
 const openBtn = document.getElementById("open-btn");
+const renameName = document.getElementById("rename-name");
+const renameBtn = document.getElementById("rename-btn");
 const downloadBtn = document.getElementById("download-btn");
 const toast = document.getElementById("toast");
 
@@ -374,6 +376,38 @@ openBtn.addEventListener("click", async () => {
     showToast(`Opened "${name}"`);
   } else {
     showToast(res.data.error || "Couldn't open that artwork.", true);
+  }
+});
+
+// Rename (R10): rename the artwork chosen in the "Saved artwork" list.
+renameBtn.addEventListener("click", async () => {
+  const oldName = openSelect.value;
+  const newName = renameName.value.trim();
+  if (!oldName) {
+    showToast("Choose a saved artwork to rename.", true);
+    return;
+  }
+  if (!newName) {
+    showToast("Type the new name first.", true);
+    renameName.focus();
+    return;
+  }
+  let res = await api("POST", "/api/rename", { old_name: oldName, new_name: newName });
+  if (res.status === 409) {
+    // Never replace another saved artwork without asking.
+    const ok = confirm(`${res.data.error} Renaming "${oldName}" will replace it, and its old drawing will be lost. Replace it?`);
+    if (!ok) return;
+    res = await api("POST", "/api/rename", { old_name: oldName, new_name: newName, overwrite: true });
+  }
+  if (res.ok) {
+    const renamed = res.data.renamed;
+    // If the renamed artwork is the one that's open, keep the name box in step.
+    if (saveName.value.trim() === oldName) saveName.value = renamed;
+    renameName.value = "";
+    showToast(`Renamed "${oldName}" to "${renamed}" ✓`);
+    refreshSavedList(renamed);
+  } else {
+    showToast(res.data.error || "Couldn't rename that artwork.", true);
   }
 });
 

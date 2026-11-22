@@ -147,6 +147,24 @@ def create_app(save_dir=None):
             return error(str(e))
         return jsonify({"saved": name})
 
+    # ---- renaming saved artwork (R10) -------------------------------------
+
+    @app.post("/api/rename")
+    def rename():
+        data = body()
+        try:
+            new_name = storage.rename_artwork(
+                data.get("old_name"), data.get("new_name"), save_dir, overwrite=data.get("overwrite") is True
+            )
+        except storage.ArtworkExistsError as e:
+            # 409 tells the browser to ask the user before replacing it.
+            return jsonify({"error": str(e), "exists": True}), 409
+        except FileNotFoundError as e:
+            return error(str(e), 404)
+        except ValueError as e:
+            return error(str(e))
+        return jsonify({"renamed": new_name})
+
     @app.post("/api/load")
     def load():
         try:
