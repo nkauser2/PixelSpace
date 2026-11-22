@@ -1,0 +1,9 @@
+# User artwork stays on this computer, never in git
+saves/
+
+# Python clutter
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
