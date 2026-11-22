@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PixelSpace</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <h1 class="logo">Pixel<span>Space</span></h1>
+    <div class="topbar-actions">
+      <button id="undo-btn" class="btn" title="Undo (Ctrl+Z)" disabled>↶ Undo</button>
+      <button id="redo-btn" class="btn" title="Redo (Ctrl+Y)" disabled>↷ Redo</button>
+      <button id="clear-btn" class="btn btn-danger" title="Clear the whole canvas">Clear</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="panel">
+      <!-- Tools (R3, R4) -->
+      <section class="panel-section">
+        <h2>Tools</h2>
+        <div class="tool-row">
+          <button class="tool active" data-tool="brush" title="Brush (B)">🖌️ Brush</button>
+          <button class="tool" data-tool="eraser" title="Eraser (E)">🧽 Eraser</button>
+        </div>
+        <label class="size-label" for="size-slider">
+          Size <output id="size-value">8</output>
+        </label>
+        <input id="size-slider" type="range" min="{{ min_size }}" max="{{ max_size }}" value="8">
+      </section>
+
+      <!-- Colors (R2) -->
+      <section class="panel-section">
+        <h2>Colors</h2>
+        <div class="current-color">
+          <span id="color-preview" class="color-preview" style="background: {{ default_color }}"></span>
+          <span id="color-name">{{ default_color }}</span>
+        </div>
+        <div class="palette" id="palette">
+          {% for color in palette %}
+          <button class="swatch{% if color.hex == default_color %} active{% endif %}"
+                  data-color="{{ color.hex }}" title="{{ color.name }}"
+                  style="background: {{ color.hex }}"></button>
+          {% endfor %}
+        </div>
+        <label class="custom-color">
+          <input id="custom-color" type="color" value="{{ default_color }}">
+          Pick a custom color
+        </label>
+      </section>
+
+      <!-- Coloring templates (R7) -->
+      <section class="panel-section">
+        <h2>Coloring templates</h2>
+        <select id="template-select">
+          <option value="">— No template —</option>
+          {% for t in templates %}
+          <option value="{{ t.id }}">{{ t.name }}</option>
+          {% endfor %}
+        </select>
+      </section>
+
+      <!-- Save / open (R6) -->
+      <section class="panel-section">
+        <h2>My artwork</h2>
+        <div class="field-row">
+          <input id="save-name" type="text" placeholder="Name your artwork" maxlength="50">
+          <button id="save-btn" class="btn btn-primary">Save</button>
+        </div>
+        <div class="field-row">
+          <select id="open-select"><option value="">— Saved artwork —</option></select>
+          <button id="open-btn" class="btn">Open</button>
+        </div>
+        <button id="download-btn" class="btn btn-wide">⬇ Download as PNG</button>
+      </section>
+    </aside>
+
+    <!-- The canvas (R1). Paint goes on the bottom layer, template outlines on top. -->
+    <section class="stage">
+      <div class="canvas-wrap" id="canvas-wrap" style="aspect-ratio: {{ width }} / {{ height }}">
+        <canvas id="paint-layer" width="{{ width }}" height="{{ height }}"></canvas>
+        <canvas id="template-layer" width="{{ width }}" height="{{ height }}"></canvas>
+      </div>
+      <p class="hint">Tip: <kbd>B</kbd> brush · <kbd>E</kbd> eraser · <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo · <kbd>Ctrl</kbd>+<kbd>Y</kbd> redo</p>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
