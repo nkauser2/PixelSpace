@@ -1,0 +1,27 @@
+# PixelSpace
+
+## What it does
+
+PixelSpace is a beginner-friendly digital art canvas that runs in your web browser. You can draw freehand with a brush, erase, pick colors from a built-in palette or choose your own, and color in ready-made templates. You can undo, redo, clear the canvas, and save your artwork to reopen later. Everything runs on your own computer, with no accounts, API keys or payments.
+
+## How to run it
+
+Install the requirements (one time only):
+
+```
+pip install -r requirements.txt
+```
+
+Start PixelSpace:
+
+```
+python app.py
+```
+
+Then open http://127.0.0.1:5000 in your web browser.
+
+## How to run the tests
+
+```
+python -m pytest
+```
