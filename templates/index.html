@@ -38,6 +38,11 @@
           <span id="color-preview" class="color-preview" style="background: {{ default_color }}"></span>
           <span id="color-name">{{ default_color }}</span>
         </div>
+        <!-- Recent colors (R9): filled in by app.js, newest first -->
+        <h3 class="subheading">Recent colors</h3>
+        <div class="recent-colors" id="recent-colors">
+          <span class="recent-empty">Colors you pick will show up here.</span>
+        </div>
         <div class="palette" id="palette">
           {% for color in palette %}
           <button class="swatch{% if color.hex == default_color %} active{% endif %}"

@@ -21,6 +21,7 @@ const swatches = document.querySelectorAll(".swatch");
 const customColor = document.getElementById("custom-color");
 const colorPreview = document.getElementById("color-preview");
 const colorName = document.getElementById("color-name");
+const recentColorsBox = document.getElementById("recent-colors");
 const templateSelect = document.getElementById("template-select");
 const saveName = document.getElementById("save-name");
 const saveBtn = document.getElementById("save-btn");
@@ -232,12 +233,50 @@ function setColor(hex) {
   colorName.textContent = color;
   customColor.value = color;
   swatches.forEach((s) => s.classList.toggle("active", s.dataset.color === color));
+  recentColorsBox.querySelectorAll(".swatch").forEach((s) => s.classList.toggle("active", s.dataset.color === color));
   setTool("brush"); // picking a color means you want to paint
 }
 
+// ---------- recent colors (R9) ----------
+// The server remembers the 5 most recently picked colors (newest first,
+// each only once). We just draw whatever list it sends back.
+function showRecentColors(colors) {
+  recentColorsBox.innerHTML = "";
+  if (colors.length === 0) {
+    recentColorsBox.innerHTML = '<span class="recent-empty">Colors you pick will show up here.</span>';
+    return;
+  }
+  for (const hex of colors) {
+    const button = document.createElement("button");
+    button.className = "swatch" + (hex === color ? " active" : "");
+    button.dataset.color = hex;
+    button.title = `Use ${hex} again`;
+    button.style.background = hex;
+    button.addEventListener("click", () => pickColor(hex));
+    recentColorsBox.appendChild(button);
+  }
+}
+
+// "Picking" a color = choosing it on purpose: a palette swatch, a recent
+// color, or closing the custom picker. It becomes the current color AND
+// goes to the front of the recent list.
+async function pickColor(hex) {
+  setColor(hex);
+  const res = await api("POST", "/api/recent-colors", { color: hex });
+  if (res.ok) showRecentColors(res.data);
+}
+
+async function loadRecentColors() {
+  const res = await api("GET", "/api/recent-colors");
+  if (res.ok) showRecentColors(res.data);
+}
+
 toolButtons.forEach((b) => b.addEventListener("click", () => setTool(b.dataset.tool)));
-swatches.forEach((s) => s.addEventListener("click", () => setColor(s.dataset.color)));
+swatches.forEach((s) => s.addEventListener("click", () => pickColor(s.dataset.color)));
+// While dragging inside the custom picker, the color updates live ("input")
+// but only the final choice, when the picker closes ("change"), counts as picked.
 customColor.addEventListener("input", () => setColor(customColor.value));
+customColor.addEventListener("change", () => pickColor(customColor.value));
 sizeSlider.addEventListener("input", () => {
   size = Number(sizeSlider.value);
   sizeValue.textContent = size;
@@ -367,3 +406,4 @@ function showToast(message, isError = false) {
 // ---------- start ----------
 reloadState();
 refreshSavedList();
+loadRecentColors();

@@ -12,7 +12,7 @@ from flask import Flask, jsonify, render_template, request
 
 import storage
 from canvas_model import CANVAS_HEIGHT, CANVAS_WIDTH, MAX_SIZE, MIN_SIZE, Canvas
-from colors import DEFAULT_COLOR, PALETTE
+from colors import DEFAULT_COLOR, PALETTE, RecentColors
 from coloring_templates import get_template, list_templates
 
 
@@ -24,6 +24,10 @@ def create_app(save_dir=None):
 
     # PixelSpace runs locally for one person, so one canvas in memory is enough.
     app.config["CANVAS"] = Canvas()
+    # Recent colors (R9) are kept only while the app runs, never on disk.
+    # They live outside the Canvas, so undo, clear and opening artwork
+    # don't change them.
+    app.config["RECENT_COLORS"] = RecentColors()
 
     def canvas():
         return app.config["CANVAS"]
@@ -69,6 +73,21 @@ def create_app(save_dir=None):
         except ValueError as e:
             return error(str(e))
         return jsonify(canvas().state())
+
+    # ---- recent colors (R9) ---------------------------------------------
+
+    @app.get("/api/recent-colors")
+    def get_recent_colors():
+        return jsonify(app.config["RECENT_COLORS"].colors)
+
+    @app.post("/api/recent-colors")
+    def pick_recent_color():
+        recent = app.config["RECENT_COLORS"]
+        try:
+            recent.pick(body().get("color"))
+        except ValueError as e:
+            return error(str(e))
+        return jsonify(recent.colors)
 
     # ---- undo / redo (R5) and clear (R8) ---------------------------------
 

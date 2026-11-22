@@ -239,3 +239,67 @@ def test_r8_clear_does_not_touch_saved_artwork(client, save_dir):
     client.post("/api/save", json={"name": "safe"})
     client.post("/api/clear")
     assert (save_dir / "safe.json").exists()
+
+
+# ---------- R9: recent colors ----------
+
+def test_r9_page_has_a_recent_colors_area(client):
+    """R9: The page has a place to show the recent colors."""
+    html = client.get("/").get_data(as_text=True)
+    assert 'id="recent-colors"' in html
+
+
+def test_r9_recent_colors_start_empty_in_the_app(client):
+    """R9: When the app starts, no colors have been picked yet."""
+    assert client.get("/api/recent-colors").get_json() == []
+
+
+def test_r9_picking_colors_updates_the_recent_list(client):
+    """R9: Each picked color is added to the front of the list."""
+    client.post("/api/recent-colors", json={"color": "#e63946"})
+    res = client.post("/api/recent-colors", json={"color": "#2A9D5C"})
+    assert res.status_code == 200
+    assert res.get_json() == ["#2a9d5c", "#e63946"]
+    assert client.get("/api/recent-colors").get_json() == ["#2a9d5c", "#e63946"]
+
+
+def test_r9_app_shows_only_the_five_newest_colors_once_each(client):
+    """R9: Through the app, the list holds 5 colors, newest first, no repeats."""
+    for color in ["#111111", "#222222", "#333333", "#111111", "#444444", "#555555", "#666666"]:
+        client.post("/api/recent-colors", json={"color": color})
+    assert client.get("/api/recent-colors").get_json() == ["#666666", "#555555", "#444444", "#111111", "#333333"]
+
+
+def test_r9_clicking_a_recent_color_selects_it_again(client):
+    """R9: Clicking a recent color re-picks it (moves to front) and it can be painted with."""
+    for color in ["#111111", "#222222", "#333333"]:
+        client.post("/api/recent-colors", json={"color": color})
+    recent = client.get("/api/recent-colors").get_json()
+    clicked = recent[2]  # the oldest one, "#111111"
+    assert client.post("/api/recent-colors", json={"color": clicked}).get_json()[0] == clicked
+    state = client.post("/api/stroke", json=brush(color=clicked)).get_json()
+    assert state["strokes"][0]["color"] == clicked
+
+
+def test_r9_invalid_recent_color_is_rejected(client):
+    """R9: An invalid color gets a 400 error and the list stays the same."""
+    client.post("/api/recent-colors", json={"color": "#111111"})
+    res = client.post("/api/recent-colors", json={"color": "not-a-color"})
+    assert res.status_code == 400
+    assert "hex color" in res.get_json()["error"]
+    assert client.get("/api/recent-colors").get_json() == ["#111111"]
+
+
+def test_r9_recent_colors_are_not_part_of_undo_or_clear(client):
+    """R9: Undo and Clear change the drawing, not the recent colors."""
+    client.post("/api/stroke", json=brush())
+    client.post("/api/recent-colors", json={"color": "#111111"})
+    client.post("/api/undo")
+    client.post("/api/clear")
+    assert client.get("/api/recent-colors").get_json() == ["#111111"]
+
+
+def test_r9_recent_colors_are_not_written_to_disk(client, save_dir):
+    """R9: Recent colors live only while the app runs; nothing is saved to disk."""
+    client.post("/api/recent-colors", json={"color": "#111111"})
+    assert not save_dir.exists()
