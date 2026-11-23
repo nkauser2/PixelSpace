@@ -8,7 +8,7 @@ How the program is tested: Automated testing will be used and it will test the a
 
 What must never happen: Never use or require API keys, paid services/payments, or user accounts. Never delete saved artwork or do anything without the user's permission and approval. 
 
-Decision records: Decision records in docs/decisions/ are numbered with four digits (0001, 0002, ...), and the next one is 0004.
+Decision records: Decision records in docs/decisions/ are numbered with four digits (0001, 0002, ...), and the next one is 0006.
 
 Decision record format: Each decision record is written as a Y-statement (In the context of..., facing..., we decided for..., and neglected..., to achieve..., accepting...).
 
