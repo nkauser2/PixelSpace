@@ -179,3 +179,14 @@ Round 7 adds R16. R1-R15 keep working. Only the page's look changes; drawing, sa
 1. The message goes on its own line above the top bar, centered. The logo and buttons stay.
 2. Use cursive fonts already on the computer (no download).
 3. The color is the accent purple, `#7b4fd6`.
+
+### Smaller choices made in Round 7 (not asked for by the user)
+
+- Using installed fonts instead of downloading one is recorded in decision 0011.
+- The fallback order (Segoe Script, then Brush Script MT, then `cursive`) was chosen by me. The user chose "fonts already on the computer", not these particular fonts.
+- The message is a plain paragraph (`<p class="welcome">`), not a heading, so the "PixelSpace" logo stays the page's main heading (`<h1>`).
+- Size: 2rem (about 32 px) on wide screens and 1.5rem (about 24 px) on windows less than 600 px wide, using the same narrow-screen limit as the deer (R14). With 14 px of space above it.
+- On very narrow windows it wraps onto two centered lines (checked at 320 px wide); at 360 px it still fits on one line.
+- It scrolls away with the page; it is not fixed to the top of the window.
+- The README mentions the welcome message.
+- Tested by reading the served page, CSS and `app.js` (tests/test_welcome.py), and by saving an artwork and checking the file. Checked in headless Edge at 1300, 600 and 599 px wide, and in 360 and 320 px wide frames, with a temporary save folder. Headless Edge wouldn't make its window narrower than about 500 px, so the frames were needed for the smallest widths.
