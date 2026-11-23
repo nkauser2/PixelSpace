@@ -91,41 +91,32 @@ Round 4 adds R12. Everything else (R1-R11) keeps working, and nothing about draw
 
 # Round 5
 
-Round 5 adds R13 and R14. Everything else (R1-R12) keeps working, and nothing about drawing, saving or save files changes. Like R12, these two requirements only change how the page looks.
+Round 5 adds R13 and R14. R1-R12 keep working. Only the page's look changes; drawing, saving and save files do not.
 
-## R13: Deer icon on the canvas and in the browser tab
+## R13: Deer icon
 
-- PixelSpace has a small picture of a **dark purple deer with pink antlers**. It is a deer's head seen from the front: purple head and ears, with two pink branching antlers on top.
-- The deer sits **on top of the canvas, inside its top-right corner**, a little in from the edges (the user's choice).
-- The same picture is the **icon in the browser tab** (the favicon). The canvas icon and the tab icon come from one file, so they always match.
-- The deer is **not part of the artwork**:
-  - it is not drawn onto the canvas, not saved in save files, and not in the downloaded PNG;
-  - brush strokes, the eraser, placing and selecting all work underneath it, as if it weren't there (clicks and touches go straight through it to the canvas).
-- Its background is see-through, so only the deer itself covers the canvas.
+- A dark purple deer's head with pink antlers sits over the canvas, inside its top-right corner.
+- The same file (`static/deer.svg`) is the browser tab icon, so the two always match.
+- The deer is only decoration. It is not drawn on the canvas, saved, or in the PNG download. Clicks go through it, so drawing works underneath. Its background is see-through.
 
-## R14: Half-size deer on narrow screens
+## R14: Half size on narrow screens
 
-- At full size the deer is **64 × 64 pixels** (the user's choice).
-- When the browser window is **less than 600 pixels wide**, the deer is shown at **half size: 32 × 32 pixels**. At exactly 600 pixels and wider, it is full size (the user's choice). Resizing the window switches the size straight away; no reload is needed.
-- The gap between the deer and the canvas edges is halved too (8 px becomes 4 px), so the deer keeps the same look in the corner.
-- Only the deer on the page changes size. The browser decides the size of the tab icon.
+- The deer is 64 × 64 px. When the window is less than 600 px wide, it is 32 × 32 px (600 px counts as wide). The tab icon doesn't change.
 
-### The user's answers to my questions (asked before any code was written)
+### The user's answers (asked before writing code)
 
-1. **Where in the corner:** over the canvas, inside its top-right corner, not outside it. It is never part of the artwork, and strokes can be drawn underneath it.
-2. **Size:** 64 px at full size, so 32 px on narrow screens.
-3. **What "narrow" means:** a browser window less than 600 px wide. 600 px itself counts as wide.
+1. The deer goes over the canvas, inside the corner, and is never part of the artwork.
+2. It is 64 px, so 32 px on narrow screens.
+3. "Narrow" means a window less than 600 px wide.
 
 ### Smaller choices made in Round 5 (not asked for by the user)
 
-- **The deer's design was chosen by me:** a front-facing deer's head with two branching antlers (three points each), two ears and a pointed snout. It is drawn in a 64 × 64 grid so it stays readable as a 16 px tab icon.
-- **The exact colors were chosen by me:** dark purple `#4c1d95` for the head and ears, pink `#f472b6` for the antlers. The deer also has small **white eyes** and a **darker purple nose** (`#2e1065`). I first tried a pink nose, but changed it so the antlers are the only pink part, as R13 describes.
-- **One SVG file** (`static/deer.svg`) is used for both the tab icon and the canvas deer. See decision record 0007. There is no `.ico` or `.png` version.
-- **The deer is an `<img>` laid over the canvas**, and clicks go through it (`pointer-events: none`). See decision record 0008.
-- The deer is **8 px in from the top and right edges** of the canvas at full size, and 4 px on narrow screens (R14 section above).
-- The narrow-screen rule is written as `max-width: 599.98px`, not `599px`, so a zoomed window that is 599.5 px wide still counts as narrow.
-- The deer has **empty alt text** (`alt=""`), so screen readers skip it as decoration. It also can't be dragged or selected like a normal image (`draggable="false"`, `user-select: none`), so it doesn't get in the way while drawing.
-- The deer is **not in the PNG download**. Nothing in `app.js` needed to change for that, because the download only copies the canvas layers.
-- R13 and R14 are tested by reading the page, the stylesheet and the SVG file the app serves (tests/test_icon.py), not by looking at real pixels. The tests reuse `rgb` and `strip_comments` from tests/test_style.py, and add their own `split_media` helper that keeps `@media` rules apart from the always-on ones. The look was also checked by eye in headless Edge screenshots at 1300, 600 and 599 px wide: full size at 1300 and 600, half size at 599.
-- Two decision records were written this round (0007 and 0008), and CLAUDE.md's "next one is" number moved to 0009.
-- The README now mentions the deer.
+- The deer's design: a front-facing head with ears, a pointed snout and two three-pointed antlers.
+- Colors: head `#4c1d95`, antlers `#f472b6`, white eyes, darker purple nose `#2e1065`, so only the antlers are pink.
+- One SVG file for the tab and the canvas, with no `.ico` or `.png` (decision 0007).
+- The deer is an `<img>` over the canvas that clicks pass through (decision 0008).
+- It sits 8 px in from the top and right edges, and 4 px on narrow screens.
+- The narrow rule is `max-width: 599.98px`, so a zoomed 599.5 px window still counts as narrow.
+- `alt=""` (screen readers skip it), and it can't be dragged or selected.
+- Tested by reading the served page, CSS and SVG (tests/test_icon.py), and checked in headless Edge at 1300, 600 and 599 px wide.
+- The README mentions the deer.
