@@ -4,9 +4,27 @@ These act like the browser: they send the same requests the page sends.
 They save into a temporary folder, never the real saves/ folder.
 """
 
+import json
+
 import storage
 from colors import PALETTE
 from conftest import brush, eraser
+from shapes import list_items
+
+
+def item(name="star", color="#e63946", size=100, x=400, y=300):
+    """A ready-made "place this item" request (R7)."""
+    return {"item": name, "color": color, "size": size, "x": x, "y": y}
+
+
+def write_old_save(save_dir, name, template):
+    """Write a save file the way Rounds 1-2 did, when templates still existed."""
+    save_dir.mkdir(parents=True, exist_ok=True)
+    data = {"app": "PixelSpace", "version": 1, "name": name, "saved_at": "2026-10-01T10:00:00",
+            "template": template, "strokes": [brush(color="#2a9d5c")]}
+    path = save_dir / f"{name}.json"
+    path.write_text(json.dumps(data), encoding="utf-8")
+    return path
 
 
 # ---------- R1: interactive canvas ----------
@@ -128,7 +146,7 @@ def test_r5_undo_with_nothing_to_undo_is_safe(client):
 def test_r6_save_and_reopen_through_the_app(client):
     """R6: Save artwork, start fresh, then reopen it with everything back."""
     client.post("/api/stroke", json=brush(color="#2a9d5c"))
-    client.post("/api/template", json={"id": "house"})
+    client.post("/api/item", json=item("heart"))
     res = client.post("/api/save", json={"name": "My House"})
     assert res.get_json() == {"saved": "My_House"}
 
@@ -137,7 +155,7 @@ def test_r6_save_and_reopen_through_the_app(client):
 
     state = client.post("/api/load", json={"name": "My_House"}).get_json()
     assert state["strokes"][0]["color"] == "#2a9d5c"
-    assert state["template"] == "house"
+    assert state["strokes"][1]["item"] == "heart"
     assert state["can_undo"] is False
 
 
@@ -186,43 +204,145 @@ def test_r6_tests_never_touch_the_real_saves_folder(client, save_dir):
     assert save_dir != storage.SAVE_DIR
 
 
-# ---------- R7: coloring templates ----------
+# ---------- R7: shapes, letters and numbers ----------
 
-def test_r7_template_menu_is_on_the_page(client):
-    """R7: The page lists the coloring templates to pick from."""
+def test_r7_page_shows_every_item_to_place(client):
+    """R7: Every shape, letter and number has a button on the page."""
     html = client.get("/").get_data(as_text=True)
-    for t in client.get("/api/templates").get_json():
-        assert f'value="{t["id"]}"' in html
+    for i in list_items():
+        assert 'data-item="' + i["id"] + '"' in html
+    assert 'id="item-size"' in html
+    assert 'data-tool="place"' in html and 'data-tool="select"' in html
 
 
-def test_r7_template_details_can_be_fetched(client):
-    """R7: The browser can fetch a template's shapes to draw it."""
-    data = client.get("/api/templates/cat").get_json()
-    assert data["id"] == "cat"
-    assert len(data["shapes"]) > 0
+def test_r7_page_has_no_template_menu_any_more(client):
+    """R7: The coloring template menu has been replaced."""
+    html = client.get("/").get_data(as_text=True)
+    assert 'id="template-select"' not in html
+    assert "Coloring templates" not in html
 
 
-def test_r7_unknown_template_gives_404(client):
-    """R7: Asking for a template that doesn't exist gives 404."""
+def test_r7_choosing_a_template_is_no_longer_possible(client):
+    """R7: The old 'choose a template' and 'list templates' requests are gone."""
+    assert client.post("/api/template", json={"id": "fish"}).status_code == 404
+    assert client.get("/api/templates").status_code == 404
+    assert client.get("/api/state").get_json()["template"] is None
+
+
+def test_r7_item_list_api_gives_shape_outlines(client):
+    """R7: The browser can fetch every item, with outlines for the shapes."""
+    items = client.get("/api/items").get_json()
+    assert [i["id"] for i in items] == [i["id"] for i in list_items()]
+    for i in items:
+        if i["kind"] == "shape":
+            assert len(i["points"]) >= 3
+        else:
+            assert "points" not in i
+
+
+def test_r7_placing_an_item_through_the_app(client):
+    """R7: Placing an item adds it, filled with the color, and selects it."""
+    client.post("/api/stroke", json=brush())
+    res = client.post("/api/item", json=item("A", color="#2F5BD3", size=150, x=100, y=50))
+    assert res.status_code == 200
+    data = res.get_json()
+    assert data["selected"] == 1
+    placed = data["strokes"][1]
+    assert (placed["tool"], placed["item"], placed["color"], placed["size"]) == ("item", "A", "#2f5bd3", 150)
+    assert (placed["x"], placed["y"]) == (100, 50)
+    assert data["can_undo"] is True
+
+
+def test_r7_placing_an_item_can_be_undone_through_the_app(client):
+    """R7: Undo removes a placed item."""
+    client.post("/api/item", json=item())
+    assert client.post("/api/undo").get_json()["strokes"] == []
+
+
+def test_r7_bad_item_is_rejected_and_canvas_unchanged(client):
+    """R7: An unknown item gets a 400 error and nothing is placed."""
+    res = client.post("/api/item", json=item("dragon"))
+    assert res.status_code == 400
+    assert "error" in res.get_json()
+    assert client.get("/api/state").get_json()["strokes"] == []
+
+
+def test_r7_recoloring_a_placed_item_through_the_app(client):
+    """R7: Picking a color while an item is selected re-colors it."""
+    index = client.post("/api/item", json=item(color="#e63946")).get_json()["selected"]
+    res = client.post("/api/item/recolor", json={"index": index, "color": "#7fe0c3"})
+    assert res.status_code == 200
+    assert res.get_json()["strokes"][index]["color"] == "#7fe0c3"
+    assert client.post("/api/undo").get_json()["strokes"][index]["color"] == "#e63946"
+
+
+def test_r7_recoloring_a_brush_stroke_is_refused(client):
+    """R7: Only items can be re-colored; brush strokes keep their color."""
+    client.post("/api/stroke", json=brush(color="#111111"))
+    res = client.post("/api/item/recolor", json={"index": 0, "color": "#7fe0c3"})
+    assert res.status_code == 400
+    assert client.get("/api/state").get_json()["strokes"][0]["color"] == "#111111"
+
+
+def test_r7_clicking_finds_the_item_to_select(client):
+    """R7: The Select tool asks which item is under the pointer."""
+    client.post("/api/item", json=item(size=100, x=400, y=300))
+    assert client.post("/api/item-at", json={"x": 420, "y": 310}).get_json() == {"index": 0}
+    assert client.post("/api/item-at", json={"x": 10, "y": 10}).get_json() == {"index": None}
+    assert client.post("/api/item-at", json={"x": "left", "y": 10}).status_code == 400
+
+
+def test_r7_old_save_with_a_template_still_opens_with_its_outline(client, save_dir):
+    """R7: Artwork saved with a template in an earlier round opens, and its outline can be drawn."""
+    write_old_save(save_dir, "old_cat", "cat")
+    state = client.post("/api/load", json={"name": "old_cat"}).get_json()
+    assert state["template"] == "cat"
+    assert state["strokes"][0]["color"] == "#2a9d5c"
+    outline = client.get("/api/templates/cat")
+    assert outline.status_code == 200
+    assert len(outline.get_json()["shapes"]) > 0
+
+
+def test_r7_opening_an_old_save_does_not_change_the_file(client, save_dir):
+    """R7: Opening old artwork never rewrites its file."""
+    path = write_old_save(save_dir, "old_fish", "fish")
+    before = path.read_bytes()
+    client.post("/api/load", json={"name": "old_fish"})
+    assert path.read_bytes() == before
+
+
+def test_r7_saving_old_artwork_again_keeps_its_template(client, save_dir):
+    """R7: Adding to an old artwork and saving it keeps its template outline."""
+    write_old_save(save_dir, "old_house", "house")
+    client.post("/api/load", json={"name": "old_house"})
+    client.post("/api/item", json=item("7"))
+    client.post("/api/save", json={"name": "old_house", "overwrite": True})
+    state = client.post("/api/load", json={"name": "old_house"}).get_json()
+    assert state["template"] == "house"
+    assert state["strokes"][1]["item"] == "7"
+
+
+def test_r7_unknown_template_outline_gives_404(client):
+    """R7: Asking for the outline of a template that doesn't exist gives 404."""
     assert client.get("/api/templates/nope").status_code == 404
-    assert client.post("/api/template", json={"id": "nope"}).status_code == 404
-
-
-def test_r7_choose_and_remove_a_template(client):
-    """R7: Users can pick a template, then go back to no template."""
-    assert client.post("/api/template", json={"id": "fish"}).get_json()["template"] == "fish"
-    assert client.post("/api/template", json={"id": None}).get_json()["template"] is None
 
 
 # ---------- R8: clear canvas ----------
 
 def test_r8_clear_wipes_the_canvas(client):
-    """R8: The Clear button removes all strokes and the template."""
+    """R8: The Clear button removes all strokes and placed items."""
     client.post("/api/stroke", json=brush())
-    client.post("/api/template", json={"id": "star"})
+    client.post("/api/item", json=item())
     state = client.post("/api/clear").get_json()
     assert state["strokes"] == []
     assert state["template"] is None
+
+
+def test_r8_clear_removes_an_old_template_outline(client, save_dir):
+    """R8: Clearing old artwork removes its template outline too."""
+    write_old_save(save_dir, "old_star", "star")
+    client.post("/api/load", json={"name": "old_star"})
+    assert client.post("/api/clear").get_json()["template"] is None
 
 
 def test_r8_clear_can_be_undone_through_the_app(client):
@@ -317,7 +437,7 @@ def test_r10_page_has_rename_controls(client):
 def test_r10_rename_through_the_app_keeps_the_artwork(client):
     """R10: Rename a saved artwork, then reopen it under the new name."""
     client.post("/api/stroke", json=brush(color="#2a9d5c"))
-    client.post("/api/template", json={"id": "cat"})
+    client.post("/api/item", json=item("circle"))
     client.post("/api/save", json={"name": "draft"})
 
     res = client.post("/api/rename", json={"old_name": "draft", "new_name": "My Cat"})
@@ -328,7 +448,7 @@ def test_r10_rename_through_the_app_keeps_the_artwork(client):
     client.post("/api/clear")
     state = client.post("/api/load", json={"name": "My_Cat"}).get_json()
     assert state["strokes"][0]["color"] == "#2a9d5c"
-    assert state["template"] == "cat"
+    assert state["strokes"][1]["item"] == "circle"
 
 
 def test_r10_rename_onto_a_used_name_asks_first(client):
@@ -382,3 +502,71 @@ def test_r10_renaming_does_not_change_the_open_canvas(client):
     state = client.get("/api/state").get_json()
     assert len(state["strokes"]) == 1
     assert state["can_undo"] is True
+
+
+# ---------- R11: flip and rotate ----------
+
+def test_r11_page_has_flip_and_rotate_buttons(client):
+    """R11: The page has Flip left-right, Flip top-bottom and Rotate buttons."""
+    html = client.get("/").get_data(as_text=True)
+    assert 'id="flip-h-btn"' in html
+    assert 'id="flip-v-btn"' in html
+    assert 'id="rotate-btn"' in html
+
+
+def test_r11_rotate_through_the_app_turns_90_degrees_per_click(client):
+    """R11: Each Rotate click turns the selected item another 90 degrees."""
+    index = client.post("/api/item", json=item()).get_json()["selected"]
+    angles = [client.post("/api/item/rotate", json={"index": index}).get_json()["strokes"][index]["rotation"]
+              for _ in range(4)]
+    assert angles == [90, 180, 270, 0]
+
+
+def test_r11_flip_through_the_app(client):
+    """R11: The flip buttons mirror the selected item left-right or top-bottom."""
+    index = client.post("/api/item", json=item("F")).get_json()["selected"]
+    state = client.post("/api/item/flip", json={"index": index, "direction": "horizontal"}).get_json()
+    assert state["strokes"][index]["flip_x"] is True
+    state = client.post("/api/item/flip", json={"index": index, "direction": "vertical"}).get_json()
+    assert state["strokes"][index]["flip_y"] is True
+
+
+def test_r11_flip_and_rotate_can_be_undone_through_the_app(client):
+    """R11: Undo steps back through flips and rotations one at a time."""
+    index = client.post("/api/item", json=item()).get_json()["selected"]
+    client.post("/api/item/rotate", json={"index": index})
+    client.post("/api/item/flip", json={"index": index, "direction": "horizontal"})
+    state = client.post("/api/undo").get_json()
+    assert state["strokes"][index]["flip_x"] is False
+    assert state["strokes"][index]["rotation"] == 90
+    state = client.post("/api/undo").get_json()
+    assert state["strokes"][index]["rotation"] == 0
+    state = client.post("/api/redo").get_json()
+    assert state["strokes"][index]["rotation"] == 90
+
+
+def test_r11_flip_and_rotate_need_a_placed_item(client):
+    """R11: Flipping or rotating a brush stroke or a missing item gives 400."""
+    client.post("/api/stroke", json=brush())
+    assert client.post("/api/item/rotate", json={"index": 0}).status_code == 400
+    assert client.post("/api/item/rotate", json={}).status_code == 400
+    assert client.post("/api/item/flip", json={"index": 3, "direction": "vertical"}).status_code == 400
+
+
+def test_r11_unknown_flip_direction_gives_400(client):
+    """R11: Only horizontal and vertical flips are allowed."""
+    index = client.post("/api/item", json=item()).get_json()["selected"]
+    res = client.post("/api/item/flip", json={"index": index, "direction": "sideways"})
+    assert res.status_code == 400
+    assert client.get("/api/state").get_json()["strokes"][index]["flip_x"] is False
+
+
+def test_r11_flips_and_rotations_are_saved(client):
+    """R11: A flipped and rotated item looks the same after saving and reopening."""
+    index = client.post("/api/item", json=item("R")).get_json()["selected"]
+    client.post("/api/item/rotate", json={"index": index})
+    client.post("/api/item/flip", json={"index": index, "direction": "vertical"})
+    client.post("/api/save", json={"name": "turned"})
+    client.post("/api/clear")
+    placed = client.post("/api/load", json={"name": "turned"}).get_json()["strokes"][0]
+    assert (placed["rotation"], placed["flip_x"], placed["flip_y"]) == (270, False, True)

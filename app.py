@@ -5,15 +5,26 @@ Then open:     http://127.0.0.1:5000  in your web browser.
 
 This file is the web server. It shows the page and answers small JSON
 requests from the browser (add a stroke, undo, save, ...). The real logic
-lives in canvas_model.py, colors.py, storage.py and coloring_templates.py.
+lives in canvas_model.py, colors.py, shapes.py, storage.py and
+coloring_templates.py.
 """
 
 from flask import Flask, jsonify, render_template, request
 
 import storage
-from canvas_model import CANVAS_HEIGHT, CANVAS_WIDTH, MAX_SIZE, MIN_SIZE, Canvas
+from canvas_model import (
+    CANVAS_HEIGHT,
+    CANVAS_WIDTH,
+    DEFAULT_ITEM_SIZE,
+    MAX_ITEM_SIZE,
+    MAX_SIZE,
+    MIN_ITEM_SIZE,
+    MIN_SIZE,
+    Canvas,
+)
 from colors import DEFAULT_COLOR, PALETTE, RecentColors
-from coloring_templates import get_template, list_templates
+from coloring_templates import get_template
+from shapes import SHAPE_OUTLINES, list_items
 
 
 def create_app(save_dir=None):
@@ -48,11 +59,14 @@ def create_app(save_dir=None):
             "index.html",
             palette=PALETTE,
             default_color=DEFAULT_COLOR,
-            templates=list_templates(),
+            items=list_items(),
             width=CANVAS_WIDTH,
             height=CANVAS_HEIGHT,
             min_size=MIN_SIZE,
             max_size=MAX_SIZE,
+            min_item_size=MIN_ITEM_SIZE,
+            max_item_size=MAX_ITEM_SIZE,
+            default_item_size=DEFAULT_ITEM_SIZE,
         )
 
     @app.get("/api/state")
@@ -106,11 +120,68 @@ def create_app(save_dir=None):
         canvas().clear()
         return jsonify(canvas().state())
 
-    # ---- coloring templates (R7) -----------------------------------------
+    # ---- shapes, letters and numbers (R7) ---------------------------------
 
-    @app.get("/api/templates")
-    def templates_list():
-        return jsonify(list_templates())
+    @app.get("/api/items")
+    def items_list():
+        """Every item; shapes also carry the outline the browser fills in."""
+        items = list_items()
+        for item in items:
+            if item["kind"] == "shape":
+                item["points"] = SHAPE_OUTLINES[item["id"]]
+        return jsonify(items)
+
+    @app.post("/api/item")
+    def place_item():
+        data = body()
+        try:
+            index = canvas().place_item(data.get("item"), data.get("color"), data.get("size"), data.get("x"), data.get("y"))
+        except ValueError as e:
+            return error(str(e))
+        # The item just placed becomes the selected one.
+        return jsonify({**canvas().state(), "selected": index})
+
+    @app.post("/api/item/recolor")
+    def recolor_item():
+        data = body()
+        try:
+            canvas().recolor_item(data.get("index"), data.get("color"))
+        except ValueError as e:
+            return error(str(e))
+        return jsonify(canvas().state())
+
+    @app.post("/api/item-at")
+    def item_at():
+        """Which item is under the pointer? Used by the Select tool."""
+        data = body()
+        try:
+            index = canvas().item_at(data.get("x"), data.get("y"))
+        except ValueError as e:
+            return error(str(e))
+        return jsonify({"index": index})
+
+    # ---- flip and rotate (R11) -------------------------------------------
+
+    @app.post("/api/item/rotate")
+    def rotate_item():
+        try:
+            canvas().rotate_item(body().get("index"))
+        except ValueError as e:
+            return error(str(e))
+        return jsonify(canvas().state())
+
+    @app.post("/api/item/flip")
+    def flip_item():
+        data = body()
+        try:
+            canvas().flip_item(data.get("index"), data.get("direction"))
+        except ValueError as e:
+            return error(str(e))
+        return jsonify(canvas().state())
+
+    # ---- template outlines in artwork saved before Round 3 (R7) ----------
+    # Templates can't be chosen any more, but old saves that use one still
+    # show its outline, so the browser can still fetch it.
 
     @app.get("/api/templates/<template_id>")
     def template_detail(template_id):
@@ -118,14 +189,6 @@ def create_app(save_dir=None):
         if template is None:
             return error(f"No template called '{template_id}'.", 404)
         return jsonify(template)
-
-    @app.post("/api/template")
-    def choose_template():
-        template_id = body().get("id")  # None means "no template"
-        if template_id is not None and get_template(template_id) is None:
-            return error(f"No template called '{template_id}'.", 404)
-        canvas().set_template(template_id)
-        return jsonify(canvas().state())
 
     # ---- saving and reopening (R6) ---------------------------------------
 
