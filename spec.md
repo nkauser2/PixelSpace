@@ -161,3 +161,21 @@ Round 6 adds R15. R1-R14 keep working. Save files don't change: the gallery only
 - Each preview is 200 × 150 pixels inside; on screen it is sized to fit five in a row.
 - Tested through `/api/gallery`, `storage.gallery_artworks`, and the served page, CSS and `app.js` (tests/test_gallery.py). Checked in headless Edge at 1300, 600 and 599 px wide, with a temporary save folder: five per row, newest first, eraser gaps, an old template outline and a damaged file all showed correctly, and clicking a preview opened it and closed the gallery.
 - The README mentions the gallery.
+
+# Round 7
+
+Round 7 adds R16. R1-R15 keep working. Only the page's look changes; drawing, saving and save files do not.
+
+## R16: Welcome message in cursive
+
+- The page shows the words **Welcome to PixelSpace** on their own line at the very top of the page, centered across the whole width, above the top bar. The top bar (the "PixelSpace" logo on the left, Undo, Redo and Clear on the right) stays as it was, just below the message.
+- The message is written in a cursive font that is already on the student's computer. No font is downloaded and no outside service is used, so it works offline. The fonts are tried in this order: **Segoe Script** (checked: installed on this Windows 11 PC), then **Brush Script MT** (checked: also installed on this PC), then the browser's own `cursive` font. On a computer without the first two it will look a little different, but it is still cursive. Which font a browser picks for `cursive` was not checked on other computers.
+- It is in the app's accent purple, `#7b4fd6` (the same purple as "Space" in the logo).
+- It sits on the pastel gradient (R12) with no box of its own, so the gradient shows behind it.
+- The message is only decoration, like the gradient and the deer. It is not drawn on the canvas, saved in save files, included in the downloaded PNG, or shown in gallery previews, and it doesn't cover the canvas, so it never stops the student drawing.
+
+### The user's answers (asked before writing code)
+
+1. The message goes on its own line above the top bar, centered. The logo and buttons stay.
+2. Use cursive fonts already on the computer (no download).
+3. The color is the accent purple, `#7b4fd6`.
