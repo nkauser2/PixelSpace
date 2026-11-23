@@ -115,3 +115,17 @@ Round 5 adds R13 and R14. Everything else (R1-R12) keeps working, and nothing ab
 1. **Where in the corner:** over the canvas, inside its top-right corner, not outside it. It is never part of the artwork, and strokes can be drawn underneath it.
 2. **Size:** 64 px at full size, so 32 px on narrow screens.
 3. **What "narrow" means:** a browser window less than 600 px wide. 600 px itself counts as wide.
+
+### Smaller choices made in Round 5 (not asked for by the user)
+
+- **The deer's design was chosen by me:** a front-facing deer's head with two branching antlers (three points each), two ears and a pointed snout. It is drawn in a 64 × 64 grid so it stays readable as a 16 px tab icon.
+- **The exact colors were chosen by me:** dark purple `#4c1d95` for the head and ears, pink `#f472b6` for the antlers. The deer also has small **white eyes** and a **darker purple nose** (`#2e1065`). I first tried a pink nose, but changed it so the antlers are the only pink part, as R13 describes.
+- **One SVG file** (`static/deer.svg`) is used for both the tab icon and the canvas deer. See decision record 0007. There is no `.ico` or `.png` version.
+- **The deer is an `<img>` laid over the canvas**, and clicks go through it (`pointer-events: none`). See decision record 0008.
+- The deer is **8 px in from the top and right edges** of the canvas at full size, and 4 px on narrow screens (R14 section above).
+- The narrow-screen rule is written as `max-width: 599.98px`, not `599px`, so a zoomed window that is 599.5 px wide still counts as narrow.
+- The deer has **empty alt text** (`alt=""`), so screen readers skip it as decoration. It also can't be dragged or selected like a normal image (`draggable="false"`, `user-select: none`), so it doesn't get in the way while drawing.
+- The deer is **not in the PNG download**. Nothing in `app.js` needed to change for that, because the download only copies the canvas layers.
+- R13 and R14 are tested by reading the page, the stylesheet and the SVG file the app serves (tests/test_icon.py), not by looking at real pixels. The tests reuse `rgb` and `strip_comments` from tests/test_style.py, and add their own `split_media` helper that keeps `@media` rules apart from the always-on ones. The look was also checked by eye in headless Edge screenshots at 1300, 600 and 599 px wide: full size at 1300 and 600, half size at 599.
+- Two decision records were written this round (0007 and 0008), and CLAUDE.md's "next one is" number moved to 0009.
+- The README now mentions the deer.
