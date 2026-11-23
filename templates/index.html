@@ -18,12 +18,14 @@
 
   <main class="layout">
     <aside class="panel">
-      <!-- Tools (R3, R4) -->
+      <!-- Tools (R3, R4, and Place / Select for R7 and R11) -->
       <section class="panel-section">
         <h2>Tools</h2>
-        <div class="tool-row">
+        <div class="tool-row tool-grid">
           <button class="tool active" data-tool="brush" title="Brush (B)">🖌️ Brush</button>
           <button class="tool" data-tool="eraser" title="Eraser (E)">🧽 Eraser</button>
+          <button class="tool" data-tool="place" title="Place the chosen shape, letter or number (P)">📌 Place</button>
+          <button class="tool" data-tool="select" title="Click a placed item to select it (S)">👆 Select</button>
         </div>
         <label class="size-label" for="size-slider">
           Size <output id="size-value">8</output>
@@ -56,15 +58,30 @@
         </label>
       </section>
 
-      <!-- Coloring templates (R7) -->
+      <!-- Shapes, letters and numbers to place (R7) -->
+      {% set shape_icons = {"circle": "●", "square": "■", "triangle": "▲", "star": "★",
+                            "heart": "♥", "diamond": "◆", "hexagon": "⬢", "arrow": "➜"} %}
       <section class="panel-section">
-        <h2>Coloring templates</h2>
-        <select id="template-select">
-          <option value="">— No template —</option>
-          {% for t in templates %}
-          <option value="{{ t.id }}">{{ t.name }}</option>
+        <h2>Shapes, letters &amp; numbers</h2>
+        <div class="item-grid" id="item-grid">
+          {% for item in items %}
+          <button class="item-btn item-{{ item.kind }}" data-item="{{ item.id }}" title="Place {{ item.name }}">
+            {{- shape_icons.get(item.id, item.id) -}}
+          </button>
           {% endfor %}
-        </select>
+        </div>
+        <label class="size-label" for="item-size">
+          Item size <output id="item-size-value">{{ default_item_size }}</output>
+        </label>
+        <input id="item-size" type="range" min="{{ min_item_size }}" max="{{ max_item_size }}" value="{{ default_item_size }}">
+
+        <!-- Flip and rotate (R11): act on the selected item -->
+        <h3 class="subheading selected-heading">Selected item</h3>
+        <div class="tool-row">
+          <button id="flip-h-btn" class="btn" title="Flip left-right (mirror)" disabled>⇆ Flip</button>
+          <button id="flip-v-btn" class="btn" title="Flip top-bottom (mirror)" disabled>⇅ Flip</button>
+          <button id="rotate-btn" class="btn" title="Rotate 90° clockwise" disabled>⟳ 90°</button>
+        </div>
       </section>
 
       <!-- Save / open (R6) -->
@@ -87,13 +104,16 @@
       </section>
     </aside>
 
-    <!-- The canvas (R1). Paint goes on the bottom layer, template outlines on top. -->
+    <!-- The canvas (R1). Paint and placed items go on the bottom layer. Above
+         it: the outline of a template (only in artwork saved before Round 3),
+         then the dashed box around the selected item. -->
     <section class="stage">
       <div class="canvas-wrap" id="canvas-wrap" style="aspect-ratio: {{ width }} / {{ height }}">
         <canvas id="paint-layer" width="{{ width }}" height="{{ height }}"></canvas>
         <canvas id="template-layer" width="{{ width }}" height="{{ height }}"></canvas>
+        <canvas id="selection-layer" width="{{ width }}" height="{{ height }}"></canvas>
       </div>
-      <p class="hint">Tip: <kbd>B</kbd> brush · <kbd>E</kbd> eraser · <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo · <kbd>Ctrl</kbd>+<kbd>Y</kbd> redo</p>
+      <p class="hint">Tip: <kbd>B</kbd> brush · <kbd>E</kbd> eraser · <kbd>P</kbd> place · <kbd>S</kbd> select · <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo · <kbd>Ctrl</kbd>+<kbd>Y</kbd> redo</p>
     </section>
   </main>
 

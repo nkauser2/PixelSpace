@@ -91,6 +91,28 @@ body {
 .tool-row { display: flex; gap: 8px; }
 .tool { flex: 1; }
 .tool.active { background: var(--accent-soft); border-color: var(--accent); font-weight: 600; }
+.tool-grid { flex-wrap: wrap; }
+.tool-grid .tool { flex: 1 1 45%; }
+
+/* ---- shapes, letters and numbers (R7) ---- */
+.item-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; max-height: 190px; overflow-y: auto; }
+.item-btn {
+  font: inherit;
+  font-weight: 700;
+  font-size: 1rem;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+}
+.item-btn:hover { border-color: var(--accent); }
+.item-btn.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.item-shape { font-size: 1.15rem; }
+.selected-heading { margin-top: 14px; }
+.tool-row .btn { flex: 1; padding: 8px 6px; }
 
 .size-label { display: flex; justify-content: space-between; margin-top: 14px; font-size: 0.9rem; }
 input[type="range"] { width: 100%; accent-color: var(--accent); }
@@ -141,7 +163,9 @@ input[type="text"], select {
   cursor: crosshair;
 }
 .canvas-wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-#template-layer { pointer-events: none; }
+#template-layer, #selection-layer { pointer-events: none; }
+.canvas-wrap.selecting { cursor: pointer; }
+.canvas-wrap.placing { cursor: copy; }
 .hint { color: var(--muted); font-size: 0.85rem; text-align: center; }
 kbd {
   background: var(--panel);

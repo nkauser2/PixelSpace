@@ -9,6 +9,8 @@ const paintCanvas = document.getElementById("paint-layer");
 const paint = paintCanvas.getContext("2d");
 const templateCanvas = document.getElementById("template-layer");
 const templateCtx = templateCanvas.getContext("2d");
+const selectionCanvas = document.getElementById("selection-layer");
+const selectionCtx = selectionCanvas.getContext("2d");
 const canvasWrap = document.getElementById("canvas-wrap");
 
 const undoBtn = document.getElementById("undo-btn");
@@ -22,7 +24,12 @@ const customColor = document.getElementById("custom-color");
 const colorPreview = document.getElementById("color-preview");
 const colorName = document.getElementById("color-name");
 const recentColorsBox = document.getElementById("recent-colors");
-const templateSelect = document.getElementById("template-select");
+const itemButtons = document.querySelectorAll(".item-btn");
+const itemSizeSlider = document.getElementById("item-size");
+const itemSizeValue = document.getElementById("item-size-value");
+const flipHBtn = document.getElementById("flip-h-btn");
+const flipVBtn = document.getElementById("flip-v-btn");
+const rotateBtn = document.getElementById("rotate-btn");
 const saveName = document.getElementById("save-name");
 const saveBtn = document.getElementById("save-btn");
 const openSelect = document.getElementById("open-select");
@@ -36,13 +43,17 @@ const toast = document.getElementById("toast");
 let tool = "brush";
 let color = customColor.value;
 let size = Number(sizeSlider.value);
+let chosenItem = null;     // the shape, letter or number the Place tool puts down (R7)
+let itemSize = Number(itemSizeSlider.value);
 
 // ---------- the artwork ----------
-let strokes = [];          // strokes the server has confirmed
+let strokes = [];          // strokes and placed items the server has confirmed
 let pendingStrokes = [];   // finished strokes still on their way to the server
 let currentStroke = null;  // the stroke being drawn right now
-let templateId = null;
+let templateId = null;     // only artwork saved before Round 3 can have one
 const templateCache = {};
+let shapeOutlines = {};    // shape id -> outline points, from /api/items
+let selectedIndex = null;  // which placed item is selected (R7, R11), or null
 
 // ---------- talking to the server ----------
 // Requests are sent one at a time, in order, so a quick "draw then undo"
@@ -66,6 +77,10 @@ function applyState(state) {
   strokes = state.strokes;
   undoBtn.disabled = !state.can_undo;
   redoBtn.disabled = !state.can_redo;
+  // Drop the selection if that item isn't there any more.
+  if (selectedIndex !== null && !(strokes[selectedIndex] && strokes[selectedIndex].tool === "item")) {
+    selectedIndex = null;
+  }
   render();
   showTemplate(state.template);
 }
@@ -90,7 +105,40 @@ function setUpPen(ctx, stroke) {
   }
 }
 
+// A placed shape, letter or number (R7), filled with its color.
+// The steps match item_point_on_canvas in canvas_model.py: move to the
+// center, turn clockwise, then mirror (canvas transforms apply last-first).
+function drawItem(ctx, item) {
+  ctx.save();
+  ctx.globalCompositeOperation = "source-over";
+  ctx.fillStyle = item.color;
+  ctx.translate(item.x, item.y);
+  ctx.rotate((item.rotation * Math.PI) / 180);
+  ctx.scale(item.flip_x ? -1 : 1, item.flip_y ? -1 : 1);
+  const outline = shapeOutlines[item.item];
+  if (outline) {
+    ctx.beginPath();
+    ctx.moveTo(outline[0][0] * item.size, outline[0][1] * item.size);
+    for (const [x, y] of outline.slice(1)) ctx.lineTo(x * item.size, y * item.size);
+    ctx.closePath();
+    ctx.fill();
+  } else {
+    // A letter or number: big bold text, centered on the item's middle.
+    ctx.font = `bold ${item.size}px system-ui, "Segoe UI", Roboto, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+    const m = ctx.measureText(item.item);
+    const middle = (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
+    ctx.fillText(item.item, 0, middle);
+  }
+  ctx.restore();
+}
+
 function drawStroke(ctx, stroke) {
+  if (stroke.tool === "item") {
+    drawItem(ctx, stroke);
+    return;
+  }
   const pts = stroke.points;
   ctx.save();
   setUpPen(ctx, stroke);
@@ -122,6 +170,30 @@ function render() {
   for (const stroke of strokes) drawStroke(paint, stroke);
   for (const stroke of pendingStrokes) drawStroke(paint, stroke);
   if (currentStroke) drawStroke(paint, currentStroke);
+  drawSelection();
+}
+
+// ---------- the selected item (R7, R11) ----------
+// A dashed box shows which item is selected. The flip and rotate buttons
+// only work when something is selected.
+function drawSelection() {
+  selectionCtx.clearRect(0, 0, selectionCanvas.width, selectionCanvas.height);
+  const item = selectedIndex === null ? null : strokes[selectedIndex];
+  const hasItem = Boolean(item && item.tool === "item");
+  flipHBtn.disabled = flipVBtn.disabled = rotateBtn.disabled = !hasItem;
+  if (!hasItem) return;
+  const half = item.size / 2 + 4;
+  selectionCtx.save();
+  selectionCtx.setLineDash([8, 6]);
+  selectionCtx.lineWidth = 2;
+  selectionCtx.strokeStyle = "#7b4fd6";
+  selectionCtx.strokeRect(item.x - half, item.y - half, half * 2, half * 2);
+  selectionCtx.restore();
+}
+
+function setSelected(index) {
+  selectedIndex = index;
+  drawSelection();
 }
 
 // Convert a mouse/touch position into canvas coordinates
@@ -133,8 +205,37 @@ function toCanvasPoint(event) {
   return [Math.round(x * 10) / 10, Math.round(y * 10) / 10];
 }
 
+// Place tool (R7): put the chosen item down with its center at the click.
+async function placeItemAt(point) {
+  if (!chosenItem) {
+    showToast("Choose a shape, letter or number first.", true);
+    return;
+  }
+  const res = await api("POST", "/api/item", { item: chosenItem, color, size: itemSize, x: point[0], y: point[1] });
+  if (res.ok) {
+    applyState(res.data);
+    setSelected(res.data.selected); // the new item is selected, ready to flip or rotate
+  } else {
+    showToast(res.data.error || "That item couldn't be placed.", true);
+  }
+}
+
+// Select tool (R7, R11): select the top item under the click, or nothing.
+async function selectAt(point) {
+  const res = await api("POST", "/api/item-at", { x: point[0], y: point[1] });
+  if (res.ok) setSelected(res.data.index);
+}
+
 canvasWrap.addEventListener("pointerdown", (event) => {
   if (event.button !== 0) return; // left button / finger / pen only
+  if (tool === "place") {
+    placeItemAt(toCanvasPoint(event));
+    return;
+  }
+  if (tool === "select") {
+    selectAt(toCanvasPoint(event));
+    return;
+  }
   canvasWrap.setPointerCapture(event.pointerId);
   currentStroke = {
     tool,
@@ -176,7 +277,9 @@ async function finishStroke() {
 canvasWrap.addEventListener("pointerup", finishStroke);
 canvasWrap.addEventListener("pointercancel", finishStroke);
 
-// ---------- coloring templates ----------
+// ---------- template outlines (only in artwork saved before Round 3) ----------
+// Templates were replaced by placeable items in Round 3 (R7), but old saves
+// that use one still show its outline on top of the paint.
 function drawShape(ctx, shape) {
   ctx.beginPath();
   if (shape.type === "circle") {
@@ -195,7 +298,6 @@ function drawShape(ctx, shape) {
 
 async function showTemplate(id) {
   templateId = id;
-  templateSelect.value = id || "";
   templateCtx.clearRect(0, 0, templateCanvas.width, templateCanvas.height);
   if (!id) return;
 
@@ -214,19 +316,21 @@ async function showTemplate(id) {
   for (const shape of templateCache[id].shapes) drawShape(templateCtx, shape);
 }
 
-templateSelect.addEventListener("change", async () => {
-  const res = await api("POST", "/api/template", { id: templateSelect.value || null });
-  if (res.ok) applyState(res.data);
-  else {
-    showToast(res.data.error || "Couldn't load that template.", true);
-    templateSelect.value = templateId || "";
-  }
-});
-
 // ---------- tools, size and colors ----------
 function setTool(newTool) {
   tool = newTool;
   toolButtons.forEach((b) => b.classList.toggle("active", b.dataset.tool === tool));
+  canvasWrap.classList.toggle("placing", tool === "place");
+  canvasWrap.classList.toggle("selecting", tool === "select");
+  // Painting or erasing means you're done with the selected item.
+  if (tool === "brush" || tool === "eraser") setSelected(null);
+}
+
+// Choosing an item in the grid gets the Place tool ready to put it down.
+function chooseItem(itemId) {
+  chosenItem = itemId;
+  itemButtons.forEach((b) => b.classList.toggle("active", b.dataset.item === itemId));
+  setTool("place");
 }
 
 function setColor(hex) {
@@ -236,7 +340,7 @@ function setColor(hex) {
   customColor.value = color;
   swatches.forEach((s) => s.classList.toggle("active", s.dataset.color === color));
   recentColorsBox.querySelectorAll(".swatch").forEach((s) => s.classList.toggle("active", s.dataset.color === color));
-  setTool("brush"); // picking a color means you want to paint
+  if (tool === "eraser") setTool("brush"); // picking a color means you want to paint
 }
 
 // ---------- recent colors (R9) ----------
@@ -262,8 +366,14 @@ function showRecentColors(colors) {
 // "Picking" a color = choosing it on purpose: a palette swatch, a recent
 // color, or closing the custom picker. It becomes the current color AND
 // goes to the front of the recent list.
+// If an item is selected, it is re-colored too (R7).
 async function pickColor(hex) {
   setColor(hex);
+  if (selectedIndex !== null) {
+    const recolored = await api("POST", "/api/item/recolor", { index: selectedIndex, color: hex });
+    if (recolored.ok) applyState(recolored.data);
+    else showToast(recolored.data.error || "Couldn't re-color that item.", true);
+  }
   const res = await api("POST", "/api/recent-colors", { color: hex });
   if (res.ok) showRecentColors(res.data);
 }
@@ -284,13 +394,44 @@ sizeSlider.addEventListener("input", () => {
   sizeValue.textContent = size;
 });
 
+// ---------- shapes, letters and numbers (R7) ----------
+itemButtons.forEach((b) => b.addEventListener("click", () => chooseItem(b.dataset.item)));
+itemSizeSlider.addEventListener("input", () => {
+  itemSize = Number(itemSizeSlider.value);
+  itemSizeValue.textContent = itemSize;
+});
+
+async function loadShapeOutlines() {
+  const res = await api("GET", "/api/items");
+  if (!res.ok) return;
+  for (const item of res.data) {
+    if (item.points) shapeOutlines[item.id] = item.points;
+  }
+  render(); // items may have been drawn before their outlines arrived
+}
+
+// ---------- flip and rotate the selected item (R11) ----------
+async function changeSelected(url, extra = {}) {
+  if (selectedIndex === null) return;
+  const res = await api("POST", url, { index: selectedIndex, ...extra });
+  if (res.ok) applyState(res.data);
+  else showToast(res.data.error || "Couldn't change that item.", true);
+}
+
+flipHBtn.addEventListener("click", () => changeSelected("/api/item/flip", { direction: "horizontal" }));
+flipVBtn.addEventListener("click", () => changeSelected("/api/item/flip", { direction: "vertical" }));
+rotateBtn.addEventListener("click", () => changeSelected("/api/item/rotate"));
+
 // ---------- undo, redo, clear ----------
+// Undo, redo, clear and opening artwork all clear the selection.
 async function undo() {
+  selectedIndex = null;
   const res = await api("POST", "/api/undo");
   if (res.ok) applyState(res.data);
 }
 
 async function redo() {
+  selectedIndex = null;
   const res = await api("POST", "/api/redo");
   if (res.ok) applyState(res.data);
 }
@@ -304,6 +445,7 @@ clearBtn.addEventListener("click", async () => {
     return;
   }
   if (!confirm("Clear the whole canvas? (You can still undo this.)")) return;
+  selectedIndex = null;
   const res = await api("POST", "/api/clear");
   if (res.ok) applyState(res.data);
 });
@@ -322,6 +464,10 @@ document.addEventListener("keydown", (event) => {
     setTool("brush");
   } else if (!event.ctrlKey && !event.metaKey && key === "e") {
     setTool("eraser");
+  } else if (!event.ctrlKey && !event.metaKey && key === "p") {
+    setTool("place");
+  } else if (!event.ctrlKey && !event.metaKey && key === "s") {
+    setTool("select");
   }
 });
 
@@ -371,6 +517,7 @@ openBtn.addEventListener("click", async () => {
   if (hasWork && !confirm(`Open "${name}"? Anything unsaved on the current canvas will be replaced.`)) return;
   const res = await api("POST", "/api/load", { name });
   if (res.ok) {
+    selectedIndex = null;
     applyState(res.data);
     saveName.value = name;
     showToast(`Opened "${name}"`);
@@ -438,6 +585,7 @@ function showToast(message, isError = false) {
 }
 
 // ---------- start ----------
+loadShapeOutlines();
 reloadState();
 refreshSavedList();
 loadRecentColors();
