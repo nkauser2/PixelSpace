@@ -1,7 +1,7 @@
 # Problem 
 Students who want to pursue or are interested in digital art may not have as much access to digital art resources or digital/graphic art tools. The tools which are available may be overwhelming (too professional) for beginners to understand while other softwares might be too basic. Beginners might also have limited opportunities to experiment with colors or tools at that entry level. Students need an easily accesible yet modern way to learn and practice creative skills/tools and make digital artwork without having to learn it professionally.
 
-# Initial Requirements: 
+# Initial requirements
 
 **R1:**
 The program must display an interactive interface/canvas where users can create their digital artwork. 
