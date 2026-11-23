@@ -120,3 +120,27 @@ Round 5 adds R13 and R14. R1-R12 keep working. Only the page's look changes; dra
 - `alt=""` (screen readers skip it), and it can't be dragged or selected.
 - Tested by reading the served page, CSS and SVG (tests/test_icon.py), and checked in headless Edge at 1300, 600 and 599 px wide.
 - The README mentions the deer.
+
+# Round 6
+
+Round 6 adds R15. R1-R14 keep working. Save files don't change: the gallery only reads them.
+
+## R15: Gallery of saved artwork
+
+- A "Gallery" button in "My artwork" opens the gallery as a pop-up over the page. The canvas and any unsaved drawing stay behind it, unchanged. A Close button, the Escape key or a click on the dark area around the pop-up closes it.
+- The gallery shows every saved artwork as a small preview with its name underneath.
+- Each preview is drawn from the artwork's own save file, the same way the canvas draws it: strokes, eraser marks, placed items (with their flips and rotations) and, for artwork saved before Round 3, the template outline. It has a white background, like the canvas and the PNG download.
+- Previews show only the artwork. Page decorations (the pastel gradient and the deer) are never in them.
+- There are always five previews per row, on every screen size. On narrow screens the previews just get smaller.
+- The newest artwork comes first. "Newest" means the time it was last saved (the `saved_at` time already in every save file). Saving an artwork again moves it to the front. Renaming it does not change its place.
+- Clicking a preview opens that artwork on the canvas and closes the gallery. If the canvas has a drawing on it, PixelSpace asks first, exactly like the Open button does.
+- With no saved artwork, the gallery says so instead of showing an empty grid.
+- A damaged save file still appears in the gallery, with a "Can't be shown" note in place of a preview, and it can't be opened from there. The file is never changed or removed.
+- Opening the gallery never changes, renames or deletes any save file. The "Saved artwork" list, Open and Rename all keep working as before.
+
+### The user's answers (asked before writing code)
+
+1. "Most latest first" means the time each artwork was last saved. Renaming doesn't move it.
+2. The gallery is a pop-up over the page, not a separate page.
+3. Clicking a preview opens it right away (asking first if the canvas has a drawing).
+4. Always five per row, even on screens under 600 px wide.
