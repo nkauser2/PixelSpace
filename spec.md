@@ -88,3 +88,30 @@ Round 4 adds R12. Everything else (R1-R11) keeps working, and nothing about draw
 - The old near-white page color (`#f4f2fb`) was removed; nothing else used it.
 - R12 is tested by reading the stylesheet the app serves (tests/test_style.py), not by looking at real pixels. The look was also checked by eye in headless Edge screenshots, at a wide and a narrow window size.
 - The README now mentions the pastel background.
+
+# Round 5
+
+Round 5 adds R13 and R14. Everything else (R1-R12) keeps working, and nothing about drawing, saving or save files changes. Like R12, these two requirements only change how the page looks.
+
+## R13: Deer icon on the canvas and in the browser tab
+
+- PixelSpace has a small picture of a **dark purple deer with pink antlers**. It is a deer's head seen from the front: purple head and ears, with two pink branching antlers on top.
+- The deer sits **on top of the canvas, inside its top-right corner**, a little in from the edges (the user's choice).
+- The same picture is the **icon in the browser tab** (the favicon). The canvas icon and the tab icon come from one file, so they always match.
+- The deer is **not part of the artwork**:
+  - it is not drawn onto the canvas, not saved in save files, and not in the downloaded PNG;
+  - brush strokes, the eraser, placing and selecting all work underneath it, as if it weren't there (clicks and touches go straight through it to the canvas).
+- Its background is see-through, so only the deer itself covers the canvas.
+
+## R14: Half-size deer on narrow screens
+
+- At full size the deer is **64 × 64 pixels** (the user's choice).
+- When the browser window is **less than 600 pixels wide**, the deer is shown at **half size: 32 × 32 pixels**. At exactly 600 pixels and wider, it is full size (the user's choice). Resizing the window switches the size straight away; no reload is needed.
+- The gap between the deer and the canvas edges is halved too (8 px becomes 4 px), so the deer keeps the same look in the corner.
+- Only the deer on the page changes size. The browser decides the size of the tab icon.
+
+### The user's answers to my questions (asked before any code was written)
+
+1. **Where in the corner:** over the canvas, inside its top-right corner, not outside it. It is never part of the artwork, and strokes can be drawn underneath it.
+2. **Size:** 64 px at full size, so 32 px on narrow screens.
+3. **What "narrow" means:** a browser window less than 600 px wide. 600 px itself counts as wide.
