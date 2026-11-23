@@ -37,6 +37,11 @@ const openBtn = document.getElementById("open-btn");
 const renameName = document.getElementById("rename-name");
 const renameBtn = document.getElementById("rename-btn");
 const downloadBtn = document.getElementById("download-btn");
+const galleryBtn = document.getElementById("gallery-btn");
+const gallery = document.getElementById("gallery");
+const galleryGrid = document.getElementById("gallery-grid");
+const galleryEmpty = document.getElementById("gallery-empty");
+const galleryClose = document.getElementById("gallery-close");
 const toast = document.getElementById("toast");
 
 // ---------- what the user has chosen ----------
@@ -296,24 +301,37 @@ function drawShape(ctx, shape) {
   ctx.stroke();
 }
 
+// Fetch a template's outline once, then keep it. Returns null if it's unknown.
+async function getTemplate(id) {
+  if (!templateCache[id]) {
+    const res = await fetch(`/api/templates/${encodeURIComponent(id)}`);
+    if (!res.ok) return null;
+    templateCache[id] = await res.json();
+  }
+  return templateCache[id];
+}
+
+// Draw a template's outline. Used on the canvas and in gallery previews (R15).
+function drawTemplate(ctx, template) {
+  ctx.save();
+  ctx.strokeStyle = "#2b2d3a";
+  ctx.lineWidth = 4;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  for (const shape of template.shapes) drawShape(ctx, shape);
+  ctx.restore();
+}
+
 async function showTemplate(id) {
   templateId = id;
   templateCtx.clearRect(0, 0, templateCanvas.width, templateCanvas.height);
   if (!id) return;
 
-  if (!templateCache[id]) {
-    const res = await fetch(`/api/templates/${encodeURIComponent(id)}`);
-    if (!res.ok) return;
-    templateCache[id] = await res.json();
-  }
-  if (templateId !== id) return; // the user picked something else meanwhile
+  const template = await getTemplate(id);
+  if (!template || templateId !== id) return; // unknown, or the user picked something else meanwhile
 
   templateCtx.clearRect(0, 0, templateCanvas.width, templateCanvas.height);
-  templateCtx.strokeStyle = "#2b2d3a";
-  templateCtx.lineWidth = 4;
-  templateCtx.lineCap = "round";
-  templateCtx.lineJoin = "round";
-  for (const shape of templateCache[id].shapes) drawShape(templateCtx, shape);
+  drawTemplate(templateCtx, template);
 }
 
 // ---------- tools, size and colors ----------
@@ -452,6 +470,12 @@ clearBtn.addEventListener("click", async () => {
 
 // Keyboard shortcuts (ignored while typing in a text box).
 document.addEventListener("keydown", (event) => {
+  // While the gallery (R15) is open, Escape closes it and the drawing
+  // shortcuts are off, so nothing changes on the canvas hidden behind it.
+  if (!gallery.hidden) {
+    if (event.key === "Escape") closeGallery();
+    return;
+  }
   if (event.target.matches("input[type=text], select")) return;
   const key = event.key.toLowerCase();
   if ((event.ctrlKey || event.metaKey) && key === "z" && !event.shiftKey) {
@@ -507,23 +531,32 @@ saveBtn.addEventListener("click", async () => {
   }
 });
 
-openBtn.addEventListener("click", async () => {
-  const name = openSelect.value;
-  if (!name) {
-    showToast("Choose a saved artwork to open.", true);
-    return;
-  }
+// Open a saved artwork on the canvas. Used by the Open button and by the
+// gallery (R15). Asks first if that would replace a drawing. Returns true if
+// the artwork was opened.
+async function openArtwork(name) {
   const hasWork = strokes.length > 0 || templateId;
-  if (hasWork && !confirm(`Open "${name}"? Anything unsaved on the current canvas will be replaced.`)) return;
+  if (hasWork && !confirm(`Open "${name}"? Anything unsaved on the current canvas will be replaced.`)) return false;
   const res = await api("POST", "/api/load", { name });
   if (res.ok) {
     selectedIndex = null;
     applyState(res.data);
     saveName.value = name;
+    openSelect.value = name; // keep the "Saved artwork" list (and Rename) in step
     showToast(`Opened "${name}"`);
-  } else {
-    showToast(res.data.error || "Couldn't open that artwork.", true);
+    return true;
   }
+  showToast(res.data.error || "Couldn't open that artwork.", true);
+  return false;
+}
+
+openBtn.addEventListener("click", () => {
+  const name = openSelect.value;
+  if (!name) {
+    showToast("Choose a saved artwork to open.", true);
+    return;
+  }
+  openArtwork(name);
 });
 
 // Rename (R10): rename the artwork chosen in the "Saved artwork" list.
@@ -574,6 +607,91 @@ downloadBtn.addEventListener("click", () => {
   link.click();
 });
 
+// ---------- the gallery of saved artwork (R15) ----------
+// A pop-up with a small preview of every saved artwork, in the order the
+// server sends them: the most recently saved first. The CSS puts five in a row.
+const PREVIEW_WIDTH = 200; // pixels inside each preview; the CSS sets its size on screen
+
+// Draw a saved artwork small, the same way the canvas shows it: paint and
+// placed items, then (for artwork saved before Round 3) the template outline
+// on top. Only the artwork is drawn, on the preview's white CSS background.
+async function drawPreview(preview, entry) {
+  const ctx = preview.getContext("2d");
+  const scale = preview.width / paintCanvas.width;
+  ctx.save();
+  ctx.scale(scale, scale);
+  for (const stroke of entry.strokes) drawStroke(ctx, stroke);
+  ctx.restore();
+  if (!entry.template) return;
+  const template = await getTemplate(entry.template);
+  if (!template) return;
+  ctx.save();
+  ctx.scale(scale, scale);
+  drawTemplate(ctx, template);
+  ctx.restore();
+}
+
+// One card in the gallery: the preview (or a note if the file is damaged)
+// and the artwork's name. Clicking it opens the artwork.
+function makeGalleryCard(entry) {
+  const card = document.createElement("button");
+  card.className = "gallery-item";
+  if (entry.damaged) {
+    card.disabled = true;
+    card.title = `"${entry.name}" is damaged and can't be opened`;
+    const note = document.createElement("span");
+    note.className = "gallery-broken";
+    note.textContent = "Can't be shown";
+    card.appendChild(note);
+  } else {
+    card.title = `Open "${entry.name}"`;
+    const preview = document.createElement("canvas");
+    preview.className = "gallery-preview";
+    preview.width = PREVIEW_WIDTH;
+    preview.height = Math.round((PREVIEW_WIDTH * paintCanvas.height) / paintCanvas.width);
+    card.appendChild(preview);
+    drawPreview(preview, entry);
+    card.addEventListener("click", () => openFromGallery(entry.name));
+  }
+  const label = document.createElement("span");
+  label.className = "gallery-name";
+  label.textContent = entry.name;
+  card.appendChild(label);
+  return card;
+}
+
+async function openGallery() {
+  const res = await api("GET", "/api/gallery");
+  if (!res.ok) {
+    showToast("Couldn't load the gallery.", true);
+    return;
+  }
+  await outlinesReady; // placed shapes need their outlines to be drawn
+  galleryGrid.innerHTML = "";
+  galleryEmpty.hidden = res.data.length > 0;
+  for (const entry of res.data) galleryGrid.appendChild(makeGalleryCard(entry));
+  gallery.hidden = false;
+  galleryClose.focus();
+}
+
+function closeGallery() {
+  gallery.hidden = true;
+  galleryBtn.focus();
+}
+
+// The gallery closes once the artwork is open. If the user says no to
+// replacing their drawing, it stays open so they can choose another.
+async function openFromGallery(name) {
+  if (await openArtwork(name)) closeGallery();
+}
+
+galleryBtn.addEventListener("click", openGallery);
+galleryClose.addEventListener("click", closeGallery);
+// A click on the dark area around the pop-up closes it too.
+gallery.addEventListener("click", (event) => {
+  if (event.target === gallery) closeGallery();
+});
+
 // ---------- little pop-up messages ----------
 let toastTimer;
 function showToast(message, isError = false) {
@@ -585,7 +703,7 @@ function showToast(message, isError = false) {
 }
 
 // ---------- start ----------
-loadShapeOutlines();
+const outlinesReady = loadShapeOutlines();
 reloadState();
 refreshSavedList();
 loadRecentColors();

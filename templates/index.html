@@ -102,6 +102,8 @@
           <input id="rename-name" type="text" placeholder="New name for chosen artwork" maxlength="50">
           <button id="rename-btn" class="btn">Rename</button>
         </div>
+        <!-- Gallery (R15): opens a pop-up with a small preview of every saved artwork -->
+        <button id="gallery-btn" class="btn btn-wide" title="See all your saved artwork">🖼️ Gallery</button>
         <button id="download-btn" class="btn btn-wide">⬇ Download as PNG</button>
       </section>
     </aside>
@@ -120,6 +122,20 @@
       <p class="hint">Tip: <kbd>B</kbd> brush · <kbd>E</kbd> eraser · <kbd>P</kbd> place · <kbd>S</kbd> select · <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo · <kbd>Ctrl</kbd>+<kbd>Y</kbd> redo</p>
     </section>
   </main>
+
+  <!-- Gallery (R15): a pop-up over the page. app.js fills the grid with a
+       preview of each saved artwork, newest first, five per row. Clicking a
+       preview opens that artwork. The canvas behind it is left as it is. -->
+  <div id="gallery" class="gallery-backdrop" hidden>
+    <div class="gallery-panel" role="dialog" aria-modal="true" aria-labelledby="gallery-title">
+      <div class="gallery-header">
+        <h2 id="gallery-title">Gallery</h2>
+        <button id="gallery-close" class="btn" title="Close the gallery (Esc)">✕ Close</button>
+      </div>
+      <p id="gallery-empty" class="gallery-empty" hidden>No saved artwork yet. Save a drawing and it will show up here.</p>
+      <div id="gallery-grid" class="gallery-grid"></div>
+    </div>
+  </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
