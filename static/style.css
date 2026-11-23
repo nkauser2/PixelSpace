@@ -32,6 +32,21 @@ body {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
+/* ---- welcome message (R16) ---- */
+/* Its own line above the top bar, centered across the page, in the app's accent
+   purple. Only fonts already on the computer are used (nothing is downloaded):
+   Segoe Script, then Brush Script MT, then the browser's own cursive font.
+   No background, so the pastel gradient (R12) shows behind it. */
+.welcome {
+  margin: 0;
+  padding: 14px 20px 0;
+  text-align: center;
+  font-family: "Segoe Script", "Brush Script MT", cursive;
+  font-size: 2rem;
+  line-height: 1.3;
+  color: var(--accent);
+}
+
 /* ---- top bar ---- */
 .topbar {
   display: flex;
@@ -189,6 +204,7 @@ input[type="text"], select {
    599.98px, not 599px, so a zoomed window that is 599.5px wide still counts. */
 @media (max-width: 599.98px) {
   .deer-icon { top: 4px; right: 4px; width: 32px; height: 32px; }
+  .welcome { font-size: 1.5rem; }   /* R16: a little smaller so it fits on one line */
 }
 .canvas-wrap.selecting { cursor: pointer; }
 .canvas-wrap.placing { cursor: copy; }
