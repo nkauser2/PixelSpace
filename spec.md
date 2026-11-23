@@ -78,3 +78,13 @@ Round 4 adds R12. Everything else (R1-R11) keeps working, and nothing about draw
   - the whole left card around the color palette (Tools, Colors, Shapes, letters & numbers, and My artwork), so every control stays easy to read.
 - The gradient stays put while the page scrolls (it is fixed to the window), so it always fills the screen from lavender to mint, even on a small screen where the page is long.
 - The gradient is never part of the artwork: it is not drawn on the canvas, not saved in save files, and not in the downloaded PNG.
+
+### Smaller choices made in Round 4 (not asked for by the user)
+
+- The exact pastel colors and their even spread (listed above) were chosen by me, not given in problem.md.
+- The top bar's grey bottom line became a faint white line, so it suits the gradient.
+- The disabled Undo and Redo buttons keep their faded (see-through) look, so on the top bar they take on a little of the gradient's color. Enabled buttons are solid white.
+- The tip line under the canvas keeps its grey text, now directly on the gradient.
+- The old near-white page color (`#f4f2fb`) was removed; nothing else used it.
+- R12 is tested by reading the stylesheet the app serves (tests/test_style.py), not by looking at real pixels. The look was also checked by eye in headless Edge screenshots, at a wide and a narrow window size.
+- The README now mentions the pastel background.
