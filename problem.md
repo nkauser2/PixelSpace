@@ -43,3 +43,7 @@ The program must provide a set of shapes, letters, numbers that students can pla
 **R11**
 The program must include a button to flip (mirror horizontally or vertically) and rotate (90 degrees per click) the shapes/letters/numbers.
 
+# Round 4 requirements 
+
+**R12** 
+The background of the program must be light pastel gradient colors. It must go from lavender to soft pink to baby blue to mint green, replacing the white background. It must cover whole page except for canvas and surrounding color palette. 
