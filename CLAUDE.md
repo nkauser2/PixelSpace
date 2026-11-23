@@ -20,7 +20,11 @@ Tests and saved artwork: Tests must only save into a temporary folder (the save_
 
 Old saves: Artwork saved in any earlier round must still open and look the same. Don't rename or change the meaning of fields in save files (such as "strokes" and "template"). Only add new ones.
 
-Checking in a browser: When running the app to check the page, start it with a temporary save folder (create_app(save_dir=...)) on a spare port, never against the real saves/ folder. If you use headless Edge, give it its own temporary profile (--user-data-dir), not the user's browser profile. Node isn't installed on this computer, so use headless Edge (C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe) with --screenshot or --dump-dom and --virtual-time-budget so the page's scripts finish. Stop the temporary server when you're done.
+Checking in a browser: When running the app to check the page, start it with a temporary save folder (create_app(save_dir=...)) on a spare port, never against the real saves/ folder. If you use headless Edge, give it its own temporary profile (--user-data-dir), not the user's browser profile. Node isn't installed on this computer, so use headless Edge (C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe) with --screenshot or --dump-dom and --virtual-time-budget so the page's scripts finish. Stop the temporary server when you're done. When opening a local file in Edge, use a Windows path (file:///C:/...), not a Git Bash path (/c/...), or the file won't load. For a requirement that depends on screen size, take screenshots on both sides of the limit (for example 599 and 600 px wide).
+
+Page decorations: Anything that only decorates the page (such as the pastel background and the deer icon) must never become part of the artwork. It must not be drawn on the canvas, saved in save files, or included in the downloaded PNG, and it must never stop the student drawing on any part of the canvas.
+
+Facts in docs: Only write facts you have checked (such as browser support or version numbers) in spec.md, decision records, the README or handoff files. If you haven't checked something, say so.
 
 Handoff files: Write a round's handoff file (handoff-round-N.md) only when the user asks for it. Don't commit the handoff file, or the CLAUDE.md changes written with it; the user reads and edits them first.
 
