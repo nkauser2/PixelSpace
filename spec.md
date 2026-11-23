@@ -144,3 +144,20 @@ Round 6 adds R15. R1-R14 keep working. Save files don't change: the gallery only
 2. The gallery is a pop-up over the page, not a separate page.
 3. Clicking a preview opens it right away (asking first if the canvas has a drawing).
 4. Always five per row, even on screens under 600 px wide.
+
+### Smaller choices made in Round 6 (not asked for by the user)
+
+- Previews are drawn in the browser from the saved strokes, with the canvas's own drawing code (decision 0009).
+- The order uses the `saved_at` time inside each file, not the file's modified time, because renaming rewrites the file (decision 0010).
+- Artworks saved in the same second are in name order. Files with a missing or unreadable `saved_at` (including damaged files) go last.
+- Damaged files are shown as a "Can't be shown" card that can't be clicked, instead of being left out.
+- Each preview has the artwork's name under it. Long names are cut off with "…"; the full name is in the card's tooltip.
+- The Gallery button sits in "My artwork", above "Download as PNG". The "Saved artwork" list, Open and Rename stay as they were.
+- The pop-up also closes with Escape or a click on the dark area around it. While it is open, the keyboard shortcuts (B, E, P, S, Ctrl+Z, Ctrl+Y) are switched off, so nothing changes on the hidden canvas.
+- If the student says no to replacing their drawing, the gallery stays open.
+- Opening from the gallery also selects that artwork in the "Saved artwork" list, so Rename acts on it.
+- Pop-up messages (toasts) now appear above the gallery.
+- The gallery is fetched again each time it opens, so it always shows the latest saves and renames.
+- Each preview is 200 × 150 pixels inside; on screen it is sized to fit five in a row.
+- Tested through `/api/gallery`, `storage.gallery_artworks`, and the served page, CSS and `app.js` (tests/test_gallery.py). Checked in headless Edge at 1300, 600 and 599 px wide, with a temporary save folder: five per row, newest first, eraser gaps, an old template outline and a damaged file all showed correctly, and clicking a preview opened it and closed the gallery.
+- The README mentions the gallery.
