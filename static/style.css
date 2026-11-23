@@ -1,7 +1,13 @@
 /* PixelSpace styles: clean, modern, and friendly. */
 
 :root {
-  --bg: #f4f2fb;
+  /* R12: the pastel gradient behind the page, in order from top-left to bottom-right */
+  --bg-lavender: #e6dcfa;
+  --bg-pink: #fcdde9;
+  --bg-blue: #d6e9fb;
+  --bg-mint: #d5f5e3;
+  --page-gradient: linear-gradient(to bottom right,
+    var(--bg-lavender) 0%, var(--bg-pink) 33%, var(--bg-blue) 67%, var(--bg-mint) 100%);
   --panel: #ffffff;
   --text: #1f2333;
   --muted: #6b6f80;
@@ -17,7 +23,11 @@
 
 body {
   margin: 0;
-  background: var(--bg);
+  /* R12: the gradient fills the whole window and stays put while the page scrolls.
+     The canvas and the left card keep their own white background on top of it. */
+  min-height: 100vh;
+  background: var(--page-gradient);
+  background-attachment: fixed;
   color: var(--text);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
@@ -30,8 +40,8 @@ body {
   gap: 12px;
   flex-wrap: wrap;
   padding: 12px 20px;
-  background: var(--panel);
-  border-bottom: 1px solid var(--border);
+  background: transparent;   /* R12: the gradient shows through the top bar */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.6);
 }
 .logo { margin: 0; font-size: 1.5rem; letter-spacing: -0.5px; }
 .logo span { color: var(--accent); }
