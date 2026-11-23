@@ -61,4 +61,7 @@ The program must have the icon of the deer be half its size on narrow (under 600
 **R15** 
 The program must have a gallery view (that is accessed via a button) that shows all saved artworks as small previews, so students can open one without opening each file. Five artworks per row, most latest first.
 
+# Round 7 requirements
 
+**R16**
+The program must have a "Welcome to PixelSpace" message at the top center of the page, written in cursive.
