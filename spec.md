@@ -38,3 +38,28 @@ Round 2 adds two features. Everything from Round 1 (R1-R8) keeps working.
 - Renaming to the same name, or only changing upper/lower case (e.g. "cat" to "Cat"), is not treated as a clash with another artwork.
 - Renaming an artwork that does not exist, or using a name with no letters or numbers, gives a clear error and changes nothing.
 - If the renamed artwork is the one currently open, the name box updates to the new name.
+
+# Round 3
+
+Round 3 changes R7 and adds R11. Everything else (R1-R6, R8-R10) keeps working.
+
+## R7 (changed): Shapes, letters and numbers to place
+
+The coloring templates are replaced by items that students place on the canvas.
+
+- The items are 8 shapes (circle, square, triangle, star, heart, diamond, hexagon, arrow), the capital letters A-Z and the digits 0-9.
+- The student chooses an item in the "Shapes, letters & numbers" section, then clicks on the canvas. The item is placed with its center where they clicked.
+- A placed item is a solid shape filled with the current color. Its size comes from the "Item size" slider (20-400, default 120). Its size and position don't change after it is placed.
+- The item just placed becomes the "selected" item. The Select tool lets the student click any placed item to select it (the top one, if items overlap). The selected item has a dashed box around it. Choosing the brush or eraser, undo, redo, clear and opening artwork all clear the selection.
+- Picking a color (palette, recent color, or closing the custom picker) while an item is selected re-colors that item. The color still counts as picked for Recent colors (R9).
+- Placed items are part of the drawing. Brush strokes can paint over them, the eraser can erase them, and they are drawn in the order they were added.
+- Placing an item and re-coloring it can each be undone and redone (R5). Clear removes all items (R8). Items are saved with the artwork and come back when it is reopened (R6).
+- There is no template menu any more, so nothing new can use a template. Artwork saved in earlier rounds that uses a template still opens, and the template outline is still shown. Saving that artwork again keeps its template. Saved files are never changed just by opening them.
+
+## R11: Flip and rotate
+
+- Three buttons act on the selected item: "Flip ↔" (mirror left-right), "Flip ↕" (mirror top-bottom) and "Rotate 90°" (turn a quarter turn clockwise). They are disabled when no item is selected.
+- Flips are always as seen on the screen. Flip ↔ swaps the item's left and right sides as they look now, even if it has been rotated.
+- Four rotations bring an item back to how it started. Flipping twice the same way does too.
+- The item turns or flips around its own center, so it stays in place.
+- Each click is one step that can be undone and redone. Flips and rotations are saved with the artwork.
