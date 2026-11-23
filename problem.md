@@ -55,3 +55,10 @@ The program must have an icon of a dark purple deer with pink antlers on the top
 
 **R14** 
 The program must have the icon of the deer be half its size on narrow (under 600 pixels) screens. 
+
+# Round 6 requirements
+
+**R15** 
+The program must have a gallery view (that is accessed via a button) that shows all saved artworks as small previews, so students can open one without opening each file. Five artworks per row, most latest first.
+
+
