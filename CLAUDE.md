@@ -20,7 +20,9 @@ Tests and saved artwork: Tests must only save into a temporary folder (the save_
 
 Old saves: Artwork saved in any earlier round must still open and look the same. Don't rename or change the meaning of fields in save files (such as "strokes" and "template"). Only add new ones.
 
-Checking in a browser: When running the app to check the page, start it with a temporary save folder (create_app(save_dir=...)) on a spare port, never against the real saves/ folder. If you use headless Edge, give it its own temporary profile (--user-data-dir), not the user's browser profile.
+Checking in a browser: When running the app to check the page, start it with a temporary save folder (create_app(save_dir=...)) on a spare port, never against the real saves/ folder. If you use headless Edge, give it its own temporary profile (--user-data-dir), not the user's browser profile. Node isn't installed on this computer, so use headless Edge (C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe) with --screenshot or --dump-dom and --virtual-time-budget so the page's scripts finish. Stop the temporary server when you're done.
+
+Handoff files: Write a round's handoff file (handoff-round-N.md) only when the user asks for it. Don't commit the handoff file, or the CLAUDE.md changes written with it; the user reads and edits them first.
 
 Decisions: At the end of each round, list every decision the user did not ask for, and record them in spec.md or a decision record, not only in the chat.
 
