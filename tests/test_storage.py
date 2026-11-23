@@ -12,6 +12,7 @@ from storage import (
     ArtworkExistsError,
     artwork_exists,
     clean_name,
+    gallery_artworks,
     list_artworks,
     load_artwork,
     rename_artwork,
@@ -227,3 +228,92 @@ def test_r10_damaged_file_can_still_be_renamed_without_changing_it(save_dir):
     rename_artwork("broken", "still_broken", save_dir)
     assert (save_dir / "still_broken.json").read_text(encoding="utf-8") == "{ not json"
     assert list_artworks(save_dir) == ["still_broken"]
+
+
+# ---------- R15: the gallery reads every saved artwork, newest first ----------
+
+def write_save(save_dir, name, saved_at, template=None):
+    """Write a save file with a chosen save time, in the same shape save_artwork writes."""
+    save_dir.mkdir(parents=True, exist_ok=True)
+    data = {"app": "PixelSpace", "version": 1, "name": name, "saved_at": saved_at,
+            "template": template, "strokes": ARTWORK["strokes"]}
+    path = save_dir / f"{name}.json"
+    path.write_text(json.dumps(data), encoding="utf-8")
+    return path
+
+
+def gallery_names(save_dir):
+    return [entry["name"] for entry in gallery_artworks(save_dir)]
+
+
+def test_r15_gallery_lists_newest_saved_first(save_dir):
+    """R15: Artworks come newest first, by the time they were last saved, not by name."""
+    write_save(save_dir, "apple", "2026-01-01T09:00:00")
+    write_save(save_dir, "zebra", "2026-03-01T09:00:00")
+    write_save(save_dir, "mango", "2026-02-01T09:00:00")
+    assert gallery_names(save_dir) == ["zebra", "mango", "apple"]
+
+
+def test_r15_saving_again_moves_an_artwork_to_the_front(save_dir):
+    """R15: Saving an artwork again (with the user's OK) makes it the newest."""
+    write_save(save_dir, "old", "2020-01-01T09:00:00")
+    write_save(save_dir, "newer", "2021-01-01T09:00:00")
+    save_artwork(ARTWORK, "old", save_dir, overwrite=True)
+    assert gallery_names(save_dir) == ["old", "newer"]
+
+
+def test_r15_renaming_does_not_change_the_order(save_dir):
+    """R15: Renaming keeps the artwork's place, because it wasn't saved again."""
+    write_save(save_dir, "first", "2026-01-01T09:00:00")
+    write_save(save_dir, "second", "2026-02-01T09:00:00")
+    rename_artwork("first", "aaa", save_dir)
+    assert gallery_names(save_dir) == ["second", "aaa"]
+
+
+def test_r15_same_save_time_is_ordered_by_name(save_dir):
+    """R15: Two artworks saved in the same second are shown in name order, so the order never jumps around."""
+    write_save(save_dir, "b", "2026-01-01T09:00:00")
+    write_save(save_dir, "a", "2026-01-01T09:00:00")
+    assert gallery_names(save_dir) == ["a", "b"]
+
+
+def test_r15_gallery_gives_each_artworks_drawing(save_dir):
+    """R15: Each entry carries the saved strokes and template, so a preview can be drawn from them."""
+    write_save(save_dir, "flower", "2026-01-01T09:00:00", template="flower")
+    [entry] = gallery_artworks(save_dir)
+    assert entry["saved_at"] == "2026-01-01T09:00:00"
+    assert entry["artwork"]["strokes"] == ARTWORK["strokes"]
+    assert entry["artwork"]["template"] == "flower"
+
+
+def test_r15_gallery_is_empty_before_anything_is_saved(save_dir):
+    """R15: No saves (not even a saves folder) gives an empty gallery."""
+    assert gallery_artworks(save_dir) == []
+
+
+def test_r15_damaged_file_is_listed_last_and_left_alone(save_dir):
+    """R15: A damaged file still shows up (at the end), with no artwork, and is never changed or removed."""
+    write_save(save_dir, "good", "2026-01-01T09:00:00")
+    damaged = save_dir / "broken.json"
+    damaged.write_text("{not json", encoding="utf-8")
+    entries = gallery_artworks(save_dir)
+    assert [e["name"] for e in entries] == ["good", "broken"]
+    assert entries[1]["artwork"] is None
+    assert damaged.read_text(encoding="utf-8") == "{not json"
+
+
+def test_r15_file_without_a_save_time_goes_last(save_dir):
+    """R15: A file with a missing or unreadable save time can't be placed by time, so it goes after the others."""
+    write_save(save_dir, "no-time", None)
+    write_save(save_dir, "bad-time", "yesterday")
+    write_save(save_dir, "timed", "2020-01-01T09:00:00")
+    assert gallery_names(save_dir) == ["timed", "bad-time", "no-time"]
+
+
+def test_r15_reading_the_gallery_changes_no_files(save_dir):
+    """R15: The gallery only reads save files; every file is byte-for-byte the same afterwards."""
+    write_save(save_dir, "one", "2026-01-01T09:00:00")
+    write_save(save_dir, "two", "2026-01-02T09:00:00", template="flower")
+    before = {p.name: p.read_bytes() for p in save_dir.iterdir()}
+    gallery_artworks(save_dir)
+    assert {p.name: p.read_bytes() for p in save_dir.iterdir()} == before

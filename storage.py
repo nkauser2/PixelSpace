@@ -128,6 +128,44 @@ def list_artworks(save_dir=SAVE_DIR):
     return sorted(p.stem for p in save_dir.glob("*.json"))
 
 
+def gallery_artworks(save_dir=SAVE_DIR):
+    """Every saved artwork for the gallery (R15), the most recently saved first.
+
+    Each entry is {"name", "saved_at", "artwork"}, where "artwork" is the
+    file's data, or None if the file is damaged. Files are only read, never
+    changed. The order uses the "saved_at" time written when the artwork was
+    last saved, so renaming (which doesn't save) keeps an artwork's place.
+    Artworks saved in the same second go in name order. Files with no usable
+    save time (such as damaged ones) go last.
+    """
+    save_dir = Path(save_dir)
+    if not save_dir.exists():
+        return []
+    entries = []
+    for name in list_artworks(save_dir):  # alphabetical, so equal times stay in name order
+        try:
+            artwork = load_artwork(name, save_dir)
+        except ValueError:
+            artwork = None
+        saved_at = artwork.get("saved_at") if artwork else None
+        entries.append({"name": name, "saved_at": saved_at if _is_save_time(saved_at) else None, "artwork": artwork})
+    # Newest first. Python's sort keeps the name order for equal times, and
+    # "" (no time) sorts after every real time.
+    entries.sort(key=lambda entry: entry["saved_at"] or "", reverse=True)
+    return entries
+
+
+def _is_save_time(value):
+    """True for a time like "2026-11-21T21:19:33", the way save_artwork writes it."""
+    if not isinstance(value, str):
+        return False
+    try:
+        datetime.fromisoformat(value)
+    except ValueError:
+        return False
+    return True
+
+
 def load_artwork(name, save_dir=SAVE_DIR):
     """Read a saved artwork and return its data as a dict.
 

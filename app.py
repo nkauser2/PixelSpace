@@ -210,6 +210,27 @@ def create_app(save_dir=None):
             return error(str(e))
         return jsonify({"saved": name})
 
+    # ---- the gallery of saved artwork (R15) -------------------------------
+
+    @app.get("/api/gallery")
+    def gallery():
+        """Every saved artwork, newest saved first, with what its preview needs.
+
+        Each artwork is checked the same way opening it would be, so a preview
+        shows exactly what Open would put on the canvas. Nothing is changed:
+        not the canvas, not its undo history, not any file.
+        """
+        entries = []
+        for entry in storage.gallery_artworks(save_dir):
+            try:
+                artwork = Canvas.from_dict(entry["artwork"]).to_dict()
+                damaged = False
+            except ValueError:  # includes damaged files, whose artwork is None
+                artwork = {"template": None, "strokes": []}
+                damaged = True
+            entries.append({"name": entry["name"], "saved_at": entry["saved_at"], "damaged": damaged, **artwork})
+        return jsonify(entries)
+
     # ---- renaming saved artwork (R10) -------------------------------------
 
     @app.post("/api/rename")

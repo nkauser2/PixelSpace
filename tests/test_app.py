@@ -570,3 +570,77 @@ def test_r11_flips_and_rotations_are_saved(client):
     client.post("/api/clear")
     placed = client.post("/api/load", json={"name": "turned"}).get_json()["strokes"][0]
     assert (placed["rotation"], placed["flip_x"], placed["flip_y"]) == (270, False, True)
+
+
+# ---------- R15: gallery of saved artwork ----------
+
+def test_r15_gallery_api_lists_artworks_newest_first(client, save_dir):
+    """R15: /api/gallery gives every saved artwork, the most recently saved first."""
+    write_old_save(save_dir, "older", None)  # saved on 2026-10-01
+    client.post("/api/stroke", json=brush())
+    assert client.post("/api/save", json={"name": "today"}).status_code == 200
+    names = [entry["name"] for entry in client.get("/api/gallery").get_json()]
+    assert names == ["today", "older"]
+
+
+def test_r15_gallery_api_gives_what_the_preview_draws(client):
+    """R15: Each entry has the artwork's strokes and placed items, exactly as opening it would give."""
+    client.post("/api/stroke", json=brush(color="#123456"))
+    client.post("/api/item", json=item(name="heart"))
+    client.post("/api/item/rotate", json={"index": 1})
+    client.post("/api/save", json={"name": "mine"})
+    [entry] = client.get("/api/gallery").get_json()
+    opened = client.post("/api/load", json={"name": "mine"}).get_json()
+    assert entry["name"] == "mine"
+    assert entry["damaged"] is False
+    assert entry["strokes"] == opened["strokes"]
+    assert entry["template"] is None
+    assert entry["strokes"][1]["rotation"] == 90
+
+
+def test_r15_gallery_shows_old_saves_with_their_template(client, save_dir):
+    """R15: Artwork saved before Round 3 appears with its template outline, so its preview looks the same."""
+    write_old_save(save_dir, "old-flower", "flower")
+    [entry] = client.get("/api/gallery").get_json()
+    assert entry["template"] == "flower"
+    assert entry["strokes"][0]["color"] == "#2a9d5c"
+
+
+def test_r15_gallery_marks_damaged_files_without_breaking(client, save_dir):
+    """R15: A damaged file is listed as damaged (nothing to draw); the others still come through."""
+    client.post("/api/save", json={"name": "good"})
+    (save_dir / "broken.json").write_text("{oops", encoding="utf-8")
+    (save_dir / "bad-stroke.json").write_text(json.dumps({"saved_at": "2026-01-01T00:00:00", "strokes": [5]}),
+                                              encoding="utf-8")
+    entries = {e["name"]: e for e in client.get("/api/gallery").get_json()}
+    assert entries["good"]["damaged"] is False
+    for name in ("broken", "bad-stroke"):
+        assert entries[name]["damaged"] is True
+        assert entries[name]["strokes"] == []
+
+
+def test_r15_gallery_is_empty_with_no_saves(client):
+    """R15: With nothing saved, the gallery list is empty."""
+    assert client.get("/api/gallery").get_json() == []
+
+
+def test_r15_looking_at_the_gallery_changes_nothing(client, save_dir):
+    """R15: Opening the gallery doesn't change the canvas, its undo history, or any save file."""
+    client.post("/api/stroke", json=brush())
+    client.post("/api/save", json={"name": "keep"})
+    write_old_save(save_dir, "old", "flower")
+    files_before = {p.name: p.read_bytes() for p in save_dir.iterdir()}
+    state_before = client.get("/api/state").get_json()
+    client.get("/api/gallery")
+    assert client.get("/api/state").get_json() == state_before
+    assert {p.name: p.read_bytes() for p in save_dir.iterdir()} == files_before
+
+
+def test_r15_opening_from_the_gallery_uses_the_normal_open(client):
+    """R15: A gallery entry's name opens the artwork through /api/load, like the Open button."""
+    client.post("/api/stroke", json=brush(color="#654321"))
+    client.post("/api/save", json={"name": "pick-me"})
+    client.post("/api/clear")
+    name = client.get("/api/gallery").get_json()[0]["name"]
+    state = client.post("/api/load", json={"name": name}).get_json()
+    assert state["strokes"][0]["color"] == "#654321"
