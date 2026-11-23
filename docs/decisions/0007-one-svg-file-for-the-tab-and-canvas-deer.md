@@ -9,7 +9,7 @@ facing **the fact that browsers have traditionally used small `.ico` or `.png` f
 we decided for **a single hand-written SVG file, `static/deer.svg`, used by both `<link rel="icon" type="image/svg+xml">` and the `<img class="deer-icon">` on the canvas**,
 and neglected **a PNG or `.ico` tab icon next to a separate picture for the page, and drawing the deer straight into the HTML as inline `<svg>` markup**,
 to achieve **one picture that always looks the same in both places and stays sharp at any size (16 px tab, 64 px canvas, 32 px on narrow screens), that is a few lines of readable text a beginner can open and recolor, and that the tests can read to check the colors**,
-accepting **that a few older browsers (for example Safari before version 26) don't show SVG tab icons and fall back to their default icon, and that there is no `/favicon.ico` file, so a browser that asks for it anyway gets a "not found" that it ignores**.
+accepting **that some browsers (older Safari versions in particular) don't show SVG tab icons and fall back to their default icon, and that there is no `/favicon.ico` file, so a browser that asks for it anyway gets a "not found" that it ignores**.
 
 ## Alternatives considered
 
