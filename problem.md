@@ -47,3 +47,11 @@ The program must include a button to flip (mirror horizontally or vertically) an
 
 **R12** 
 The background of the program must be light pastel gradient colors. It must go from lavender to soft pink to baby blue to mint green, replacing the white background. It must cover whole page except for canvas and surrounding color palette. 
+
+# Round 5 requirements
+
+**R13**
+The program must have an icon of a dark purple deer with pink antlers on the top right corner of the canvas, that serves as the icon for the browser tab.
+
+**R14** 
+The program must have the icon of the deer be half its size on narrow (under 600 pixels) screens. 
