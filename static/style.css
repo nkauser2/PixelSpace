@@ -185,6 +185,11 @@ input[type="text"], select {
   pointer-events: none;
   user-select: none;
 }
+/* R14: half size on narrow screens (a window less than 600px wide).
+   599.98px, not 599px, so a zoomed window that is 599.5px wide still counts. */
+@media (max-width: 599.98px) {
+  .deer-icon { top: 4px; right: 4px; width: 32px; height: 32px; }
+}
 .canvas-wrap.selecting { cursor: pointer; }
 .canvas-wrap.placing { cursor: copy; }
 .hint { color: var(--muted); font-size: 0.85rem; text-align: center; }

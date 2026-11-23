@@ -1,4 +1,5 @@
-"""Tests for the deer icon (R13: on the canvas and in the browser tab).
+"""Tests for the deer icon (R13: on the canvas and in the browser tab;
+R14: half size on narrow screens).
 
 The tests read what the app really serves: the page (/), the stylesheet
 (/static/style.css) and the deer picture (/static/deer.svg).
@@ -186,3 +187,61 @@ def test_r13_deer_is_not_in_the_downloaded_png(client):
     script = client.get("/static/app.js").get_data(as_text=True).lower()
     assert "deer" not in script
     assert "icon" not in script
+
+
+# ---------- R14 ----------
+
+def narrow_screen_rules(css):
+    """The CSS inside the @media block for windows under 600px wide, and its width limit."""
+    _, blocks = split_media(css)
+    for condition, inside in blocks.items():
+        match = re.fullmatch(r"\(max-width:\s*(\d+(?:\.\d+)?)px\)", condition)
+        if match and ".deer-icon" in inside:
+            return inside, float(match.group(1))
+    raise AssertionError("no @media (max-width: ...) block resizes the deer")
+
+
+def test_r14_deer_is_64px_at_full_size(css):
+    """R14: Outside the narrow-screen rule, the deer is 64 x 64 pixels."""
+    outside, _ = split_media(css)
+    icon = declarations(outside, ".deer-icon")
+    assert pixels(icon["width"]) == 64
+    assert pixels(icon["height"]) == 64
+
+
+def test_r14_deer_is_half_size_on_narrow_screens(css):
+    """R14: On narrow screens, the deer's width and height are half of the full size."""
+    outside, _ = split_media(css)
+    full = declarations(outside, ".deer-icon")
+    inside, _ = narrow_screen_rules(css)
+    narrow = declarations(inside, ".deer-icon")
+    assert pixels(narrow["width"]) == pixels(full["width"]) / 2 == 32
+    assert pixels(narrow["height"]) == pixels(full["height"]) / 2 == 32
+
+
+def test_r14_narrow_means_a_window_under_600px_wide(css):
+    """R14: 599px (and anything in between, like 599.5px when zoomed) is narrow; 600px is not."""
+    _, limit = narrow_screen_rules(css)
+    assert 599.9 <= limit < 600
+
+
+def test_r14_gap_to_the_canvas_edges_is_halved_too(css):
+    """R14: The half-size deer keeps the same look in the corner: its gap to the edges is halved."""
+    outside, _ = split_media(css)
+    full = declarations(outside, ".deer-icon")
+    inside, _ = narrow_screen_rules(css)
+    narrow = declarations(inside, ".deer-icon")
+    assert pixels(narrow["top"]) == pixels(full["top"]) / 2
+    assert pixels(narrow["right"]) == pixels(full["right"]) / 2
+
+
+def test_r14_only_the_size_changes_on_narrow_screens(css):
+    """R14: The narrow-screen rule only resizes the deer; it stays in the corner and lets clicks through."""
+    inside, _ = narrow_screen_rules(css)
+    assert set(declarations(inside, ".deer-icon")) <= {"width", "height", "top", "right"}
+
+
+def test_r14_tab_icon_is_the_same_file_on_every_screen(page):
+    """R14: Only the deer on the page changes size; the tab icon is still the one deer.svg."""
+    assert len(re.findall(r'<link rel="icon"', page)) == 1
+    assert tab_icon_href(page).endswith("/deer.svg")
