@@ -18,4 +18,10 @@ Test names: Every test name starts with the requirement it checks, e.g. test_r9_
 
 Tests and saved artwork: Tests must only save into a temporary folder (the save_dir and client fixtures in tests/conftest.py), never into the real saves/ folder. storage.py must never have a delete or remove function.
 
-Git: Commit in small steps with messages that say what changed and why. Never undo or amend a commit, and never push unless the user asks.
+Old saves: Artwork saved in any earlier round must still open and look the same. Don't rename or change the meaning of fields in save files (such as "strokes" and "template"). Only add new ones.
+
+Checking in a browser: When running the app to check the page, start it with a temporary save folder (create_app(save_dir=...)) on a spare port, never against the real saves/ folder. If you use headless Edge, give it its own temporary profile (--user-data-dir), not the user's browser profile.
+
+Decisions: At the end of each round, list every decision the user did not ask for, and record them in spec.md or a decision record, not only in the chat.
+
+Git: Commit in small steps with messages that say what changed and why. Every commit should leave all tests passing. Never undo or amend a commit, and never push unless the user asks.
