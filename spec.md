@@ -63,3 +63,18 @@ The coloring templates are replaced by items that students place on the canvas.
 - Four rotations bring an item back to how it started. Flipping twice the same way does too.
 - The item turns or flips around its own center, so it stays in place.
 - Each click is one step that can be undone and redone. Flips and rotations are saved with the artwork.
+
+# Round 4
+
+Round 4 adds R12. Everything else (R1-R11) keeps working, and nothing about drawing, saving or save files changes. R12 only changes how the page looks.
+
+## R12: Pastel gradient background
+
+- The page background is a soft pastel gradient instead of the plain (near-white) background. It runs diagonally, from **lavender** in the top-left corner, through **soft pink** and **baby blue**, to **mint green** in the bottom-right corner, in that order.
+- The four colors are light pastels: lavender `#e6dcfa`, soft pink `#fcdde9`, baby blue `#d6e9fb`, mint green `#d5f5e3`. They are spread evenly (0%, 33%, 67%, 100%).
+- The gradient covers the whole browser window, the top bar included. The top bar no longer has its own white strip. Its Undo, Redo and Clear buttons stay white so they are easy to read.
+- **Not covered by the gradient (these stay white):**
+  - the canvas, so artwork looks exactly as before and the downloaded PNG still has a white background;
+  - the whole left card around the color palette (Tools, Colors, Shapes, letters & numbers, and My artwork), so every control stays easy to read.
+- The gradient stays put while the page scrolls (it is fixed to the window), so it always fills the screen from lavender to mint, even on a small screen where the page is long.
+- The gradient is never part of the artwork: it is not drawn on the canvas, not saved in save files, and not in the downloaded PNG.
