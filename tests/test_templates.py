@@ -1,9 +1,10 @@
-"""Tests for coloring_templates.py (R7: ready-made coloring templates)."""
+"""Tests for coloring_templates.py (R7: template outlines that artwork saved
+before Round 3 still shows when it is opened)."""
 
 import pytest
 
 from canvas_model import CANVAS_HEIGHT, CANVAS_WIDTH
-from coloring_templates import TEMPLATES, get_template, list_templates
+from coloring_templates import TEMPLATES, get_template
 
 SHAPE_FIELDS = {
     "circle": {"cx", "cy", "r"},
@@ -27,27 +28,14 @@ def all_points(shape):
     return [tuple(p) for p in shape["points"]]
 
 
-def test_r7_there_are_several_templates_to_choose_from():
-    """R7: PixelSpace offers at least a few ready-made templates."""
-    assert len(list_templates()) >= 3
-
-
-def test_r7_template_list_has_ids_and_names():
-    """R7: Each template in the menu has an id and a display name."""
-    for item in list_templates():
-        assert set(item) == {"id", "name"}
-        assert item["id"] and item["name"]
-
-
-def test_r7_ids_are_unique():
-    """R7: No two templates share an id."""
-    ids = [t["id"] for t in list_templates()]
-    assert len(ids) == len(set(ids))
+def test_r7_every_template_an_old_save_can_name_is_still_there():
+    """R7: All five Round 1 templates can still be drawn for old saves."""
+    assert set(TEMPLATES) == {"flower", "house", "cat", "fish", "star"}
 
 
 @pytest.mark.parametrize("template_id", list(TEMPLATES))
 def test_r7_every_template_has_valid_shapes(template_id):
-    """R7: Every template is made of known shapes with all their fields."""
+    """R7: Every old template outline is made of known shapes with all their fields."""
     template = get_template(template_id)
     assert template["shapes"], "a template must have at least one shape"
     for shape in template["shapes"]:
@@ -59,7 +47,7 @@ def test_r7_every_template_has_valid_shapes(template_id):
 
 @pytest.mark.parametrize("template_id", list(TEMPLATES))
 def test_r7_every_template_fits_on_the_canvas(template_id):
-    """R7: No part of any template is drawn off the edge of the canvas."""
+    """R7: No part of any old template outline is drawn off the edge of the canvas."""
     for shape in get_template(template_id)["shapes"]:
         for x, y in all_points(shape):
             assert 0 <= x <= CANVAS_WIDTH and 0 <= y <= CANVAS_HEIGHT, (template_id, shape)

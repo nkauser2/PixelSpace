@@ -1,8 +1,10 @@
-"""Ready-made coloring templates (R7).
+"""Coloring template outlines, kept only for artwork saved before Round 3.
 
-Each template is a list of simple outline shapes that the browser draws on
-top of the user's paint, so coloring always stays "under the lines" and the
-eraser can't remove the outlines.
+In Round 3, R7 replaced the coloring templates with shapes, letters and
+numbers (see shapes.py), so a template can no longer be chosen. Artwork
+saved in Rounds 1-2 may still name one, though, and the user decided that
+its outline should still show when it is opened. This file holds those
+outlines; the browser draws them on top of the paint.
 
 Shape types (all coordinates are on the 800 x 600 canvas):
     circle   {"cx", "cy", "r"}
@@ -104,11 +106,6 @@ TEMPLATES = {
     "fish": ("Fish", _fish()),
     "star": ("Star", _star()),
 }
-
-
-def list_templates():
-    """A short list of templates for the menu: [{"id": ..., "name": ...}, ...]."""
-    return [{"id": tid, "name": name} for tid, (name, _shapes) in TEMPLATES.items()]
 
 
 def get_template(template_id):
