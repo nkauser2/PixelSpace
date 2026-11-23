@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>PixelSpace deer</title>
+  <!-- R13: a dark purple deer's head, seen from the front, with pink antlers.
+       The same file is the icon on the canvas and in the browser tab. -->
+  <g id="antlers" fill="none" stroke="#f472b6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M26 21 C23 15 20 10 18 3"/>
+    <path d="M21.5 12 L12 8"/>
+    <path d="M24 17 L15 17"/>
+    <path d="M38 21 C41 15 44 10 46 3"/>
+    <path d="M42.5 12 L52 8"/>
+    <path d="M40 17 L49 17"/>
+  </g>
+  <g id="deer-body" fill="#4c1d95">
+    <ellipse cx="16" cy="27" rx="8" ry="4.5" transform="rotate(-20 16 27)"/>
+    <ellipse cx="48" cy="27" rx="8" ry="4.5" transform="rotate(20 48 27)"/>
+    <path d="M32 19 C40 19 45 23 44 31 C43 40 38 52 32 59 C26 52 21 40 20 31 C19 23 24 19 32 19 Z"/>
+  </g>
+  <g id="face">
+    <circle cx="26.5" cy="32" r="2.4" fill="#ffffff"/>
+    <circle cx="37.5" cy="32" r="2.4" fill="#ffffff"/>
+    <ellipse cx="32" cy="54" rx="3.2" ry="2.4" fill="#2e1065"/>
+  </g>
+</svg>

@@ -4,6 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>PixelSpace</title>
+  <!-- R13: the deer is the browser tab icon, and also sits on the canvas below -->
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='deer.svg') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
@@ -106,12 +108,14 @@
 
     <!-- The canvas (R1). Paint and placed items go on the bottom layer. Above
          it: the outline of a template (only in artwork saved before Round 3),
-         then the dashed box around the selected item. -->
+         then the dashed box around the selected item. On top of everything:
+         the deer icon (R13), which is only decoration, never part of the artwork. -->
     <section class="stage">
       <div class="canvas-wrap" id="canvas-wrap" style="aspect-ratio: {{ width }} / {{ height }}">
         <canvas id="paint-layer" width="{{ width }}" height="{{ height }}"></canvas>
         <canvas id="template-layer" width="{{ width }}" height="{{ height }}"></canvas>
         <canvas id="selection-layer" width="{{ width }}" height="{{ height }}"></canvas>
+        <img class="deer-icon" src="{{ url_for('static', filename='deer.svg') }}" alt="" draggable="false">
       </div>
       <p class="hint">Tip: <kbd>B</kbd> brush · <kbd>E</kbd> eraser · <kbd>P</kbd> place · <kbd>S</kbd> select · <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo · <kbd>Ctrl</kbd>+<kbd>Y</kbd> redo</p>
     </section>
