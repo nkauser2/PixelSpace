@@ -35,3 +35,11 @@ The program must show the 5 most recently picked colors, with each color shown o
 **R10**
 The program must allow the user to rename a saved artwork or drawing without losing it. If the new name is already used by another piece of saved artwork, the program must ask the user to confirm it before replacing it. 
 
+# Round 3 requirements
+
+**R7** 
+The program must provide a set of shapes, letters, numbers that students can place on the canvas. These can be colorable. This replaces the ready-made drawings and coloring templates.
+
+**R11**
+The program must include a button to flip (mirror horizontally or vertically) and rotate (90 degrees per click) the shapes/letters/numbers.
+
